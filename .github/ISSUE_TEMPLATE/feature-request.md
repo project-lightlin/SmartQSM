@@ -1,7 +1,7 @@
 ---
-name: 'Overview of the needed feature '
+name: Feature Request
 about: Suggest an idea for this project
-title: "[Feature_request]"
+title: "[Feature]"
 labels: ''
 assignees: ''
 
