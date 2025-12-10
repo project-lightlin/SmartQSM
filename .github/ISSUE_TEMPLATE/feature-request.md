@@ -9,7 +9,7 @@ assignees: ''
 
 Have you upgraded to the latest version? [yes|no] Your answer:
 
-If the answers to the questions is not yes, please do not open issues!
+If the answer to the questions is not yes, please do not open issues!
 
 ___
 
