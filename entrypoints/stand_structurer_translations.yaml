@@ -1,0 +1,36 @@
+简体中文:
+  name: 树
+  uniform_angle_index: 角尺度
+  hegyi_competition_index: Hegyi竞争指数
+  mingling: 混交度
+  tree_species_diversity_mingling: 树种多样性混交度
+  diameter_dominance: 大小比数
+  crowdedness: 拥挤度
+  openness: 开敞度
+  within_unit_species_richness: 单元内树种丰富度
+  neighbor_1: 第1邻树
+  distance_to_neighbor_1_m: 距第1邻树（米）
+  neighbor_2: 第2邻树
+  distance_to_neighbor_2_m: 距第2邻树（米）
+  neighbor_3: 第3邻树
+  distance_to_neighbor_3_m: 距第3邻树（米）
+  neighbor_4: 第4邻树
+  distance_to_neighbor_4_m: 距第4邻树（米）
+English:
+  name: Tree
+  uniform_angle_index: Uniform angle index
+  hegyi_competition_index: Hegyi's competition index
+  mingling: Mingling
+  tree_species_diversity_mingling: Tree species diversity mingling
+  diameter_dominance: Diameter dominance
+  crowdedness: Crowdedness
+  openness: Openness
+  within_unit_species_richness: Within-unit species richness
+  neighbor_1: 1st neighbor 
+  distance_to_neighbor_1_m: Distance to 1st neighbor (m)
+  neighbor_2: 2nd neighbor 
+  distance_to_neighbor_2_m: Distance to 2nd neighbor (m)
+  neighbor_3: 3rd neighbor 
+  distance_to_neighbor_3_m: Distance to 3rd neighbor (m)
+  neighbor_4: 4th neighbor 
+  distance_to_neighbor_4_m: Distance to 4th neighbor (m)

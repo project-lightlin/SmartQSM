@@ -1,0 +1,189 @@
+简体中文:
+  file_not_exist: 文件 {} 不存在。
+  check_update: 检查更新
+  about: 关于
+  quit: 退出
+  file: 文件
+  change_language: Change language [Current 简体中文]
+  open: 打开
+  open_file: 打开文件
+  top_view: 顶视图
+  front_view: 正视图
+  left_view: 左视图
+  back_view: 背视图
+  right_view: 右视图
+  bottom_view: 底视图
+  front_isometric_view: 前等角视图
+  back_isometric_view: 后（标准）等角视图
+  zoom_to_fit: 适应窗口
+  display: 显示
+  help: 帮助
+  qsm_file_load_failed: QSM文件 {} 加载失败。
+  unsupported_qsm_file_format: QSM文件 {} 格式不受支持。
+  ply_file_not_found: 无法找到关联的PLY文件 {}。请确保该文件与QSM文件在同一目录下。
+  ply_file_hash_mismatch: 文件哈希值不匹配。PLY文件 {} 已被非法修改或损坏。
+  parameters: 参数（点选复制到剪贴板）
+  waiting: 等待中…
+  setting_changed: 请手动关闭程序以使变更生效。
+  no_language_selected: 没有选中任何语言。
+  argument_error: "不合法的程序参数。用法：\n>python qsm_viewer.py [QSM_FILE_PATH]"
+  orthographic_projection: 正交投影
+  perspective_projection: 透视投影
+  switch_camera_projection: 透视/正交
+  id: ID
+  parent: 父ID
+  order: 级别
+  base_height_m: 基高(m)
+  base_diameter_cm: 基径(cm)
+  mid_length_diameter_cm: 中央直径(cm)
+  tip_diameter_cm: 梢头直径(cm)
+  length_m: 长度(m)
+  area_m2: 面积(m²)
+  volume_L: 体积(L)
+  max_spread_m: 最大延伸(m)
+  azimuth_deg: 方位角(°)
+  zenith_deg: 天顶角(°)
+  chord_length_m: 弦长(m)
+  arc_height_m: 弓高(m)
+  height_difference_m: 高度差(m)
+  branching_radius_m: 分枝半径(m)
+  branching_angle_deg: 分枝角(°)
+  tip_deflection_angle_deg: 着枝角(°)
+  vertical_deflection_angle_deg: 垂直偏转角(°)
+  tip_based_DINC_m: 基于梢头的着枝深度(m)
+  apex_based_DINC_m: 基于最高点的着枝深度(m)
+  growth_length_m: 生长长度(m)
+  growth_area_m2: 生长面积(m²)
+  growth_volume_L: 生长体积(L)
+  insertion_distance_m: 着生距离(m)
+  is_a_main_branch: 是否是主枝
+  X_m: X坐标(m)
+  Y_m: Y坐标(m)
+  altitude_m: 海拔(m)
+  num_branches: 枝条数
+  max_order: 最大枝条级别
+  height_m: 树高(m)
+  DBH_cm: 胸径(cm)
+  ground_diameter_cm: 地径(cm)
+  bole_height_m: 枝下高(m)
+  diameter_at_bole_height_cm: 枝下高处直径(cm)
+  bole_length_m: 主干长(m)
+  bole_area_m2: 主干面积(m²)
+  bole_volume_L: 主干体积(L)
+  trunk_length_m: 树干长(m)
+  trunk_area_m2: 树干面积(m²)
+  trunk_volume_L: 树干体积(L)
+  stem_length_m: 茎长(m)
+  stem_area_m2: 茎面积(m²)
+  stem_volume_L: 茎体积(L)
+  within_crown_stem_length_m: 冠内茎长(m)
+  within_crown_stem_area_m2: 冠内茎面积(m²)
+  within_crown_stem_volume_L: 冠内茎体积(L)
+  min_crown_radius_m: 最小冠半径(m)
+  azimuth_of_min_crown_radius_deg: 最小冠半径方位角(°)
+  height_at_min_crown_radius_m: 最小冠半径高度(m)
+  mean_crown_radius_m: 平均冠半径(m)
+  max_crown_radius_m: 最大冠半径(m)
+  azimuth_of_max_crown_radius_deg: 最大冠半径方位角(°)
+  height_at_max_crown_radius_m: 最大冠半径高度(m)
+  min_crown_width_m: 最小冠幅(m)
+  azimuth_of_min_crown_width_deg: 最小冠幅方位角(°)
+  mean_crown_width_m: 平均冠幅(m)
+  max_crown_width_m: 最大冠幅(m)
+  azimuth_of_max_crown_width_deg: 最大冠幅方位角(°)
+  east_west_crown_width_m: 东西冠幅(m)
+  north_south_crown_width_m: 南北冠幅(m)
+  crown_convex_area_m2: 冠凸面积(m²)
+  crown_convex_volume_L: 冠凸体积(L)
+  active_crown_convex_area_m2: 有效冠凸面积(m²)
+  active_crown_convex_volume_L: 有效冠凸体积(L)
+  crown_projection_convex_area_m2: 冠投影凸面积(m²)
+  crown_perimeter_m: 冠周长(m)
+  canopy_area_m2: 树荫面积(m²)
+  crown_center_offset_m: 冠中心偏移(m)
+  crown_center_azimuth_deg: 冠中心方位角(°)
+  min_crown_spread_m: 最小冠延伸(m)
+  azimuth_of_min_crown_spread_deg: 最小冠延伸方位角(°)
+  max_crown_spread_m: 最大冠延伸(m)
+  azimuth_of_max_crown_spread_deg: 最大冠延伸方位角(°)
+  base_offset_m: 基部偏移(m)
+  base_azimuth_deg: 基部方位角(°)
+English:
+  id: ID
+  parent: Parent ID
+  order: Order
+  base_height_m: Base height (m)
+  base_diameter_cm: Base diameter (cm)
+  mid_length_diameter_cm: Mid-length diameter (cm)
+  tip_diameter_cm: Tip diameter (cm)
+  length_m: Length (m)
+  area_m2: Area (m²)
+  volume_L: Volume (L)
+  max_spread_m: Max spread (m)
+  azimuth_deg: Azimuth (°)
+  zenith_deg: Zenith (°)
+  chord_length_m: Chord length (m)
+  arc_height_m: Arc height (m)
+  height_difference_m: Height difference (m)
+  branching_radius_m: Branching radius (m)
+  branching_angle_deg: Branching angle (°)
+  tip_deflection_angle_deg: Tip deflection angle (°)
+  vertical_deflection_angle_deg: Vertical deflection angle (°)
+  tip_based_DINC_m: Tip-based DINC (m)
+  apex_based_DINC_m: Apex-based DINC (m)
+  growth_length_m: Growth length (m)
+  growth_area_m2: Growth area (m²)
+  growth_volume_L: Growth volume (L)
+  insertion_distance_m: Insertion distance (m)
+  is_a_main_branch: Is a main branch?
+  X_m: X coordinate (m)
+  Y_m: Y coordinate (m)
+  altitude_m: Altitude (m)
+  num_branches: Number of branches
+  max_order: Max branch order
+  height_m: Tree height (m)
+  DBH_cm: DBH (cm)
+  ground_diameter_cm: Ground diameter (cm)
+  bole_height_m: Bole height (m)
+  diameter_at_bole_height_cm: Diameter at bole height (cm)
+  bole_length_m: Bole length (m)
+  bole_area_m2: Bole area (m²)
+  bole_volume_L: Bole volume (L)
+  trunk_length_m: Trunk length (m)
+  trunk_area_m2: Trunk area (m²)
+  trunk_volume_L: Trunk volume (L)
+  stem_length_m: Stem length (m)
+  stem_area_m2: Stem area (m²)
+  stem_volume_L: Stem volume (L)
+  within_crown_stem_length_m: Within-crown stem length (m)
+  within_crown_stem_area_m2: Within-crown stem area (m²)
+  within_crown_stem_volume_L: Within-crown stem volume (L)
+  min_crown_radius_m: Min crown radius (m)
+  azimuth_of_min_crown_radius_deg: Azimuth of min crown radius (°)
+  height_at_min_crown_radius_m: Height at min crown radius (m)
+  mean_crown_radius_m: Mean crown radius (m)
+  max_crown_radius_m: Max crown radius (m)
+  azimuth_of_max_crown_radius_deg: Azimuth of max crown radius (°)
+  height_at_max_crown_radius_m: Height at max crown radius (m)
+  min_crown_width_m: Min crown width (m)
+  azimuth_of_min_crown_width_deg: Azimuth of min crown width (°)
+  mean_crown_width_m: Mean crown width (m)
+  max_crown_width_m: Max crown width (m)
+  azimuth_of_max_crown_width_deg: Azimuth of max crown width (°)
+  east_west_crown_width_m: East-west crown width (m)
+  north_south_crown_width_m: North-south crown width (m)
+  crown_convex_area_m2: Crown convex area (m²)
+  crown_convex_volume_L: Crown convex volume (L)
+  active_crown_convex_area_m2: Active crown convex area (m²)
+  active_crown_convex_volume_L: Active crown convex volume (L)
+  crown_projection_convex_area_m2: Crown projection convex area (m²)
+  crown_perimeter_m: Crown perimeter (m)
+  canopy_area_m2: Canopy area (m²)
+  crown_center_offset_m: Crown center offset (m)
+  crown_center_azimuth_deg: Crown center azimuth (°)
+  min_crown_spread_m: Min crown spread (m)
+  azimuth_of_min_crown_spread_deg: Azimuth of min crown spread (°)
+  max_crown_spread_m: Max crown spread (m)
+  azimuth_of_max_crown_spread_deg: Azimuth of max crown spread (°)
+  base_offset_m: Base offset (m)
+  base_azimuth_deg: Base azimuth (°)

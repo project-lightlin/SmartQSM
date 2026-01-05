@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# SmartQSM only
+*.log
+*.log.*
+/entrypoints/qsm_viewer_config.yaml

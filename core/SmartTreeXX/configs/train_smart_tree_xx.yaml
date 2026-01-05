@@ -1,0 +1,24 @@
+project: u8-64-4-x-leafoff-logd
+dataset_dir: F:\datasets\tree_dataset
+use_foliage: False
+use_log_distance: True
+device: cuda
+seed: 42
+lr: 0.1
+max_epoch: 200
+max_patience: 9999
+train:
+  cube_size: 4.0
+  voxel_size: 0.01
+  batch_size: 16
+  shuffle: True
+val:
+  use_cache: True
+  cube_size: 4.0
+  buffer_size: 0.4
+  voxel_size: 0.01
+  batch_size: 16
+model:
+  u_channels: [8, 16, 32, 64]
+  mlp_hidden_layers: [8, 4]
+  conv_block_reps: 1

@@ -1,0 +1,17 @@
+tensorboard
+tensorboardX
+open3d
+pandas[excel]
+scikit-learn
+laspy[lazrs,laszip]
+osqp
+distinctipy
+pyyaml
+tqdm
+matplotlib
+ezdxf
+pyproj
+shapely
+numba
+pyperclip
+pypcd4
