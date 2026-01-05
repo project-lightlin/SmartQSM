@@ -217,10 +217,10 @@ def _check_update(gui: bool = True) -> int:
             print("Invalid input. Skipped.\n")
             return 1
 
-    # Move
-    # Move 交给“临时 worker”处理，避免当前进程占用文件
+    # 改成：
+    import tempfile
+
     try:
-        import tempfile
         worker_code = r'''
 import os, shutil, stat, sys, time, traceback, webbrowser, tkinter as tk
 from tkinter import messagebox
@@ -255,7 +255,7 @@ def main():
     temp_dir = os.path.abspath(sys.argv[1])
     root_dir = os.path.abspath(sys.argv[2])
 
-    # 等待调用进程退出，简单方式：sleep 一会儿
+    # 等调用进程完全退出
     time.sleep(3)
 
     try:
@@ -296,18 +296,18 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''
-        # 写到系统临时目录
+    '''
         tmp_dir = tempfile.gettempdir()
         worker_path = os.path.join(tmp_dir, "smartqsm_update_worker.py")
         with open(worker_path, "w", encoding="utf-8") as wf:
             wf.write(worker_code)
 
-        # 启动 worker 进程（不等它返回）
+        # 启动外部 worker 进程；worker 会在当前进程退出后覆盖 ROOT_DIR
         subprocess.Popen(
             [sys.executable, worker_path, temp_dir, ROOT_DIR],
             close_fds=True
         )
+
     except Exception:
         message = f"{traceback.format_exc()}\nFailed to start updater. Please try again later."
         if gui:
@@ -316,11 +316,10 @@ if __name__ == "__main__":
             print(message)
         return 1
 
-    # 当前进程不要再动 ROOT_DIR 了
-    return 1
+    return 1   # 表示“已进入更新流程”
 
 def check_update(gui: bool = True) -> None:
     if _check_update(gui) == 1:
-        exit(0)
+        sys.exit(0)
     if _root is not None:
         _root.destroy()
