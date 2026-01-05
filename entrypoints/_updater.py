@@ -218,78 +218,105 @@ def _check_update(gui: bool = True) -> int:
             return 1
 
     # Move
+    # Move 交给“临时 worker”处理，避免当前进程占用文件
     try:
-        copy_tree_overwrite(temp_dir, ROOT_DIR)
-    except Exception:
-        try:
-            os.remove(os.path.join(ROOT_DIR, "version.txt")) # Prevent updating version.txt first, but not all files are successfully transferred. Force in the next upgrade.
-        except Exception:
-            message = f"{traceback.format_exc()}\nEncountered a serious error during the upgrade process. These errors damage the integrity of the program and may cause various accidents during use. Please visit https://github.com/project-lightlin/SmartQSM to download and reinstall the latest version."
-            if gui:
-                showerror("Fatal error", message)
-                return 1
-            else:
-                print("\033[31mFatal error: " + message+"\033[0m")
-                return 1
-        message = f"{traceback.format_exc()}\nFailed to clone SmartQSM repository. Network Connection Exception. Please try it later."
-        if gui:
-            showerror("Error", message)
-            return 1
-        else:
-            print(message)
-            return 1
+        import tempfile
+        worker_code = r'''
+import os, shutil, stat, sys, time, traceback, webbrowser, tkinter as tk
+from tkinter import messagebox
 
-    # Execute post-installation script
-    if os.path.exists(post_installer_path):
-        try:
-            subprocess.run(
-                [sys.executable, post_installer_path], 
-                check=True,
-                text=True,
-                encoding="utf-8"
-            )
-        except Exception as e:
-            try:
-                os.remove(post_installer_path)
-                os.remove(os.path.join(ROOT_DIR, "version.txt")) # Prevent updating version.txt first, but not all files are successfully transferred. Force in the next upgrade.
-            except Exception:
-                message = f"{traceback.format_exc()}\nEncountered a serious error during the upgrade process. These errors damage the integrity of the program and may cause various accidents during use. Please visit https://github.com/project-lightlin/SmartQSM to download and reinstall the latest version."
-                if gui:
-                    showerror("Fatal error", message)
-                    return 1
-                else:
-                    print("\033[31mFatal error: " + message+"\033[0m")
-                    return 1
-            message = f"{traceback.format_exc()}\nFailed to run post-installation script. Please restart the program."
-            if gui:
-                showerror("Error", message)
-                return 1
-            else:
-                print(message)
-                return 1
-            
-    # Clean
+def handle_remove_readonly(func, path, exc_info):
+    try:
+        os.chmod(path, stat.S_IWRITE)
+    except Exception:
+        pass
+    try:
+        func(path)
+    except Exception:
+        pass
+
+def copy_tree_overwrite(src, dst):
+    if not os.path.exists(dst):
+        os.makedirs(dst, exist_ok=True)
+    skip_dirs = {'.git', '$temp'}
+    for root, dirs, files in os.walk(src):
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        rel_path = os.path.relpath(root, src)
+        dst_root = os.path.join(dst, rel_path) if rel_path != "." else dst
+        os.makedirs(dst_root, exist_ok=True)
+        for f in files:
+            src_file = os.path.join(root, f)
+            dst_file = os.path.join(dst_root, f)
+            shutil.copy2(src_file, dst_file)
+
+def main():
+    if len(sys.argv) != 3:
+        sys.exit(1)
+    temp_dir = os.path.abspath(sys.argv[1])
+    root_dir = os.path.abspath(sys.argv[2])
+
+    # 等待调用进程退出，简单方式：sleep 一会儿
+    time.sleep(3)
+
+    try:
+        copy_tree_overwrite(temp_dir, root_dir)
+    except Exception:
+        msg = ("A serious error occurred during the upgrade process:\\n\\n"
+               f"{traceback.format_exc()}\\n\\n"
+               "These errors may damage the integrity of the program. "
+               "Please visit https://github.com/project-lightlin/SmartQSM "
+               "to download and reinstall the latest version.")
+        root = tk.Tk(); root.withdraw()
+        messagebox.showerror("Fatal error", msg, parent=root)
+        root.destroy()
+        sys.exit(1)
+
+    # 清理 temp_dir
     try:
         shutil.rmtree(temp_dir, onexc=handle_remove_readonly)
     except Exception:
         pass
+
+    # 读取新版本
+    version_file = os.path.join(root_dir, "version.txt")
+    version = "unknown"
     try:
-        os.remove(post_installer_path)
+        with open(version_file, "r", encoding="utf-8") as f:
+            version = f.read().strip()
     except Exception:
         pass
-    
-    # Congratulations
-    local_version = _get_local_version(os.path.join(ROOT_DIR, "version.txt"))
 
-    message = f"SmartQSM has been successfully updated to version {local_version}! Do you want to know what has been updated?"
-    if gui:
-        if askyesno("Info", message):
-            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
-    else:
-        print(message)
-        answer = input("[Type OK to visit or any to skip]").strip().lower()
-        if answer == "ok":
-            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
+    root = tk.Tk(); root.withdraw()
+    msg = (f"SmartQSM has been successfully updated to version {version}!\\n\\n"
+           "Do you want to know what has been updated?")
+    if messagebox.askyesno("Info", msg, parent=root):
+        webbrowser.open("https://github.com/project-lightlin/SmartQSM")
+    root.destroy()
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+'''
+        # 写到系统临时目录
+        tmp_dir = tempfile.gettempdir()
+        worker_path = os.path.join(tmp_dir, "smartqsm_update_worker.py")
+        with open(worker_path, "w", encoding="utf-8") as wf:
+            wf.write(worker_code)
+
+        # 启动 worker 进程（不等它返回）
+        subprocess.Popen(
+            [sys.executable, worker_path, temp_dir, ROOT_DIR],
+            close_fds=True
+        )
+    except Exception:
+        message = f"{traceback.format_exc()}\nFailed to start updater. Please try again later."
+        if gui:
+            showerror("Error", message)
+        else:
+            print(message)
+        return 1
+
+    # 当前进程不要再动 ROOT_DIR 了
     return 1
 
 def check_update(gui: bool = True) -> None:
