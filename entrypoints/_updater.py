@@ -335,7 +335,7 @@ def main():
         if gui:
             root = tk.Tk()
             root.withdraw()
-            showerror("Fatal error", message, parent=root)
+            showerror("Fatal error", message)
             root.destroy()
         else:
             print(message)
@@ -374,7 +374,7 @@ def main():
     if gui:
         root = tk.Tk()
         root.withdraw()
-        if askyesno("Info", message, parent=root):
+        if askyesno("Info", message):
             webbrowser.open("https://github.com/project-lightlin/SmartQSM")
         root.destroy()
     else:
