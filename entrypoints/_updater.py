@@ -221,6 +221,7 @@ def _check_update(gui: bool = True) -> int:
 import os, shutil, stat, sys, time, traceback, webbrowser, psutil
 import tkinter as tk
 from tkinter import messagebox
+import importlib.util
 
 _root = None
 
@@ -316,7 +317,7 @@ def main():
         sys.exit(1)
     temp_dir = os.path.abspath(sys.argv[1])
     root_dir = os.path.abspath(sys.argv[2])
-    gui = bool(sys.argv[3])
+    gui = (sys.argv[3] == "1")
 
     time.sleep(3)
 
@@ -353,7 +354,11 @@ def main():
     post_installer_path = os.path.join(root_dir, "post_installation.py")
     if os.path.exists(post_installer_path):
         try:
-            exec(open(post_installer_path, "r", encoding="utf-8").read())
+            spec = importlib.util.spec_from_file_location("post_installation", post_installer_path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if hasattr(mod, "run_post_install"):
+                mod.run_post_install(root_dir)
         except Exception:
             message = f"{traceback.format_exc()}\nFailed to execute post_installation.py. Please try manually executing it."
             if gui:
