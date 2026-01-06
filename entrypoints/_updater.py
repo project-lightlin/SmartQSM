@@ -359,10 +359,11 @@ if __name__ == "__main__":
         with open(worker_path, "w", encoding="utf-8") as wf:
             wf.write(worker_code)
         
-        # 启动外部 worker 进程；worker 会在当前进程退出后覆盖 ROOT_DIR
         subprocess.Popen(
-            [sys.executable, worker_path, temp_dir, ROOT_DIR, gui],
-            close_fds=True
+            [sys.executable, worker_path, temp_dir, ROOT_DIR, str(gui)],
+            close_fds=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr
         )
 
     except Exception:
@@ -373,7 +374,7 @@ if __name__ == "__main__":
             print(message)
         return 1
 
-    return 1   # 表示“已进入更新流程”
+    return 1
 
 def check_update(gui: bool = True) -> None:
     if _check_update(gui) == 1:
