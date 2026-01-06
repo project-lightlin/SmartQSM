@@ -360,7 +360,7 @@ if __name__ == "__main__":
             wf.write(worker_code)
         
         subprocess.Popen(
-            [sys.executable, worker_path, temp_dir, ROOT_DIR, str(gui)],
+            [sys.executable, worker_path, temp_dir, ROOT_DIR, str(1 if gui else 0)],
             close_fds=True,
             stdout=sys.stdout,
             stderr=sys.stderr
