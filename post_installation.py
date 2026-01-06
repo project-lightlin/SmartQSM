@@ -17,6 +17,6 @@ def run_post_install(root_dir: str):
     ]
     for useless_file_path in useless_file_paths:
         try:
-            os.remove(os.path.join(current_dir, useless_file_path))
+            os.remove(os.path.join(root_dir, useless_file_path))
         except FileNotFoundError:
             pass
