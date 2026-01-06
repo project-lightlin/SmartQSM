@@ -29,7 +29,6 @@ def _with_topmost(func, title, message):
     try:
         return func(title, message, parent=root)
     finally:
-        # 恢复置顶状态，避免影响其他窗口
         root.attributes("-topmost", False)
 
 
@@ -261,15 +260,13 @@ def _has_running_entrypoints() -> bool:
         try:
             pid = proc.info["pid"]
             if pid == current_pid:
-                continue  # 跳过当前进程
+                continue
 
             cmdline = proc.info.get("cmdline") or []
             if not cmdline:
                 continue
 
-            # 逐个参数检查里面是否包含这些脚本路径
             for arg in cmdline:
-                # 统一用正斜杠，兼容 Windows / Linux
                 norm_arg = arg.replace("\\", "/").lower()
                 for t in targets:
                     if t in norm_arg:
