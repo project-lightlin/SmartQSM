@@ -11,4 +11,3 @@ try:
     os.remove(os.path.join(current_dir, "configs/layerwise-clustering-MORE-LEAVES.yaml"))
 except FileNotFoundError:
     pass
-print("Cleaned outdated configs.")

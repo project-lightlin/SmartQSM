@@ -222,6 +222,41 @@ import os, shutil, stat, sys, time, traceback, webbrowser, psutil
 import tkinter as tk
 from tkinter import messagebox
 
+_root = None
+
+def _get_root():
+    global _root
+    if _root is None:
+        _root = tk.Tk()
+        _root.title("SmartQSM")
+        _root.geometry("1x1+0+0")
+        _root.update_idletasks()
+    return _root
+
+
+def _with_topmost(func, title, message):
+    root = _get_root()
+    root.lift()
+    root.attributes("-topmost", True)
+    root.update()
+    try:
+        return func(title, message, parent=root)
+    finally:
+        root.attributes("-topmost", False)
+
+
+def showinfo(title, message):
+    return _with_topmost(messagebox.showinfo, title, message)
+
+def showwarning(title, message):
+    return _with_topmost(messagebox.showwarning, title, message)
+
+def showerror(title, message):
+    return _with_topmost(messagebox.showerror, title, message)
+
+def askyesno(title, message):
+    return _with_topmost(messagebox.askyesno, title, message)
+
 def handle_remove_readonly(func, path, exc_info):
     try:
         os.chmod(path, stat.S_IWRITE)
@@ -296,11 +331,11 @@ def main():
     try:
         copy_tree_overwrite(temp_dir, root_dir)
     except Exception:
-        message = "A serious error occurred during the upgrade process:\n\n{traceback.format_exc()}\n\nPlease make sure to upgrade after the next startup."
+        message = f"A serious error occurred during the upgrade process:\n\n{traceback.format_exc()}\n\nPlease make sure to upgrade after the next startup."
         if gui:
             root = tk.Tk()
             root.withdraw()
-            messagebox.showerror("Fatal error", message, parent=root)
+            showerror("Fatal error", message, parent=root)
             root.destroy()
         else:
             print(message)
@@ -325,6 +360,7 @@ def main():
                 showerror("Error", message)
             else:
                 print(message)
+                exec("")
 
     version_file = os.path.join(root_dir, "version.txt")
     version = "0.0.0"
@@ -338,7 +374,7 @@ def main():
     if gui:
         root = tk.Tk()
         root.withdraw()
-        if messagebox.askyesno("Info", message, parent=root):
+        if askyesno("Info", message, parent=root):
             webbrowser.open("https://github.com/project-lightlin/SmartQSM")
         root.destroy()
     else:
@@ -346,6 +382,7 @@ def main():
         answer = input("[YES/ANY]").strip().lower()
         if answer == "yes":
             webbrowser.open("https://github.com/project-lightlin/SmartQSM")
+        exec("")
     sys.exit(0)
 
 if __name__ == "__main__":
