@@ -219,7 +219,7 @@ def _check_update(gui: bool = True) -> int:
     import tempfile
     try:
         worker_code = r'''
-import os, shutil, stat, sys, time, traceback, webbrowser
+import os, shutil, stat, sys, time, traceback, webbrowser, psutil
 import tkinter as tk
 from tkinter import messagebox
 
