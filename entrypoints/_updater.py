@@ -8,7 +8,6 @@ import shutil
 import tkinter as tk
 from tkinter import messagebox
 import stat
-import webbrowser
 
 _root = None
 
@@ -217,12 +216,11 @@ def _check_update(gui: bool = True) -> int:
             print("Invalid input. Skipped.\n")
             return 1
 
-    # 改成：
     import tempfile
-
     try:
         worker_code = r'''
-import os, shutil, stat, sys, time, traceback, webbrowser, tkinter as tk
+import os, shutil, stat, sys, time, traceback, webbrowser
+import tkinter as tk
 from tkinter import messagebox
 
 def handle_remove_readonly(func, path, exc_info):
@@ -249,62 +247,121 @@ def copy_tree_overwrite(src, dst):
             dst_file = os.path.join(dst_root, f)
             shutil.copy2(src_file, dst_file)
 
+def _has_running_entrypoints() -> bool:
+    targets = {
+        "smartqsm.py",
+        "qsm_viewer.py",
+        "parameter_exporter.py",
+        "stand_structurer.py"
+    }
+
+    current_pid = os.getpid()
+
+    for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+        try:
+            pid = proc.info["pid"]
+            if pid == current_pid:
+                continue  # 跳过当前进程
+
+            cmdline = proc.info.get("cmdline") or []
+            if not cmdline:
+                continue
+
+            # 逐个参数检查里面是否包含这些脚本路径
+            for arg in cmdline:
+                # 统一用正斜杠，兼容 Windows / Linux
+                norm_arg = arg.replace("\\", "/").lower()
+                for t in targets:
+                    if t in norm_arg:
+                        return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    return False
+
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         sys.exit(1)
     temp_dir = os.path.abspath(sys.argv[1])
     root_dir = os.path.abspath(sys.argv[2])
+    gui = bool(sys.argv[3])
 
-    # 等调用进程完全退出
     time.sleep(3)
+
+    if _has_running_entrypoints():
+        message = "Another instance of SmartQSM is currently running.\n\nPlease close all then retry."
+        if gui:
+            showerror("Update blocked", message)
+        else:
+            print(message)
+        return 0
 
     try:
         copy_tree_overwrite(temp_dir, root_dir)
     except Exception:
-        msg = ("A serious error occurred during the upgrade process:\\n\\n"
-               f"{traceback.format_exc()}\\n\\n"
-               "These errors may damage the integrity of the program. "
-               "Please visit https://github.com/project-lightlin/SmartQSM "
-               "to download and reinstall the latest version.")
-        root = tk.Tk(); root.withdraw()
-        messagebox.showerror("Fatal error", msg, parent=root)
-        root.destroy()
+        message = "A serious error occurred during the upgrade process:\n\n{traceback.format_exc()}\n\nPlease make sure to upgrade after the next startup."
+        if gui:
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("Fatal error", message, parent=root)
+            root.destroy()
+        else:
+            print(message)
+        try:
+            os.remove(os.path.join(root_dir, "version.txt"))
+        except Exception:
+            pass
         sys.exit(1)
 
-    # 清理 temp_dir
     try:
         shutil.rmtree(temp_dir, onexc=handle_remove_readonly)
     except Exception:
         pass
 
-    # 读取新版本
+    post_installer_path = os.path.join(root_dir, "post_installation.py")
+    if os.path.exists(post_installer_path):
+        try:
+            exec(open(post_installer_path, "r", encoding="utf-8").read())
+        except Exception:
+            message = f"{traceback.format_exc()}\nFailed to execute post_installation.py. Please try manually executing it."
+            if gui:
+                showerror("Error", message)
+            else:
+                print(message)
+
     version_file = os.path.join(root_dir, "version.txt")
-    version = "unknown"
+    version = "0.0.0"
     try:
         with open(version_file, "r", encoding="utf-8") as f:
             version = f.read().strip()
     except Exception:
         pass
 
-    root = tk.Tk(); root.withdraw()
-    msg = (f"SmartQSM has been successfully updated to version {version}!\\n\\n"
-           "Do you want to know what has been updated?")
-    if messagebox.askyesno("Info", msg, parent=root):
-        webbrowser.open("https://github.com/project-lightlin/SmartQSM")
-    root.destroy()
+    message = f"SmartQSM has been successfully updated to version {version}!\n\nDo you want to know what has been updated?"
+    if gui:
+        root = tk.Tk()
+        root.withdraw()
+        if messagebox.askyesno("Info", message, parent=root):
+            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
+        root.destroy()
+    else:
+        print(message)
+        answer = input("[YES/ANY]").strip().lower()
+        if answer == "yes":
+            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
     sys.exit(0)
 
 if __name__ == "__main__":
     main()
-    '''
+        '''
         tmp_dir = tempfile.gettempdir()
         worker_path = os.path.join(tmp_dir, "smartqsm_update_worker.py")
         with open(worker_path, "w", encoding="utf-8") as wf:
             wf.write(worker_code)
-
+        
         # 启动外部 worker 进程；worker 会在当前进程退出后覆盖 ROOT_DIR
         subprocess.Popen(
-            [sys.executable, worker_path, temp_dir, ROOT_DIR],
+            [sys.executable, worker_path, temp_dir, ROOT_DIR, gui],
             close_fds=True
         )
 
