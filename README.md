@@ -2,7 +2,7 @@
 
 # SmartQSM (Accepted by ISPRS Journal of Photogrammetry and Remote Sensing!)
 
-SmartQSM is a quantitative structure model for individual-tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
+SmartQSM is a quantitative structure model for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
 
 ## GUI
 
@@ -52,13 +52,11 @@ git clone https://github.com/project-lightlin/SmartQSM.git
 
 *Or* you can:
 
-A. visit https://github.com/project-lightlin/SmartQSM ,
+A. click the green *Code* button on the top right corner of the repo page,
 
-B. click the green *Code* button,
+B. click *Download ZIP*,
 
-C. click *Download ZIP*,
-
-D. extract the downloaded zip file to the desired location.
+C. extract the downloaded zip file to the desired location.
 
 > **Note:**
 >

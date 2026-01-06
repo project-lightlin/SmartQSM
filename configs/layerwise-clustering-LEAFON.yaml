@@ -4,18 +4,23 @@ params_for_filter:
   nb_neighbors: 10
   std_ratio: 4.0
 skeletonization: 
-  category: thinning
-  core_algorithm: sparse_conv_based_contraction
+  category: segmentation
+  core_algorithm: fast_layerwise_clustering
   params_for_core_algorithm:
-    ckpt_path: ckpts/for_leafon_seasons.pth
-    batch_size: 16
-    max_iteration: 10
-    device: cpu
-    voxel_size: 0.01
-    cube_size: 4.0
-    buffer_size: 0.4
-    use_chamfer_distance: True
-  voxel_size_for_downsampling: 0.01
+    neighborhood_size: 0.04
+    min_layer_height: 0.01
+    height_diameter_ratio: 150
+    max_layer_spacing: 0.05
+    cluster_algorithm: dbscan
+    eps: 0.04
+    min_points: 3
+  centroid_estimator: cpc
+  params_for_centroid_estimator:
+    bounded: True
+  radius_estimator: gmm
+  params_for_radius_estimator:
+    auto: True
+    max_num_components: 10
   edge_search_param: 0.
   edge_weight_function: squared_l2_norm
   topology_extractor: spt
@@ -28,9 +33,9 @@ refinement:
   wpl_based_correction_fn_for_radius_weights: "lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0))"
   min_radius: !!float 1.0e-3
   occupancy_factor: 1.1
-  weight_fem_pos_deviation: !!float 1.0e8
+  weight_fem_pos_deviation: !!float 1.0e10
   weight_path_length: 1.0
-  weight_ref_deviation: !!float 1.0e3
+  weight_ref_deviation: 1.0
   smooth_bound: 0.05
   use_max_depth_instead_of_wpl: False
   use_log_length: True
