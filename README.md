@@ -44,11 +44,13 @@ This repo has been verified and tested on Windows 10/11. Linux has not been test
 
 1. Please refer to [how-to-install-python-and-deep-learning-libraries](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html) to prepare the virtual environment.
 
-2. Install [Git](https://git-scm.com/) and clone the repository by:
+2. Install [Git](https://git-scm.com/) and clone the repo into the specified [working directory](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html#working_directory) using:
 
 ```bash
 git clone https://github.com/project-lightlin/SmartQSM.git
 ```
+
+in the CONDA environment.
 
 *Or* you can:
 
@@ -88,7 +90,7 @@ you can select one based on your requirements.
 Alternatively, you can create a **.yaml** file with the same name as your input point cloud file in the same directory to achieve personalized reconstruction,
 though this requires some programming experience.
 
-Each processed individual-tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory.
+Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory.
 
 > **Note:**
 >
