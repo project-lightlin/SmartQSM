@@ -26,6 +26,10 @@ You can find the definitions and calculations of these parameters in the [paper]
 
 You can also visit the [repo](https://github.com/project-lightlin/SmartQSM).
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=project-lightlin/SmartQSM&type=date&legend=top-left)](https://www.star-history.com/#project-lightlin/SmartQSM&type=date&legend=top-left)
+
 ## Contributors
 
 - (Author) Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@foxmail.com](mailto:nj_yang_jie@foxmail.com))
@@ -160,6 +164,8 @@ If the code is helpful for your work, please cite:
 ```
 test
 ```
+
+Recommend that you indicate the version used (see `version.txt`) and the configuration file (and any changes you made) in your paper.
 
 ## For developers
 
