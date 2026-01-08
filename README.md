@@ -90,11 +90,14 @@ you can select one based on your requirements.
 Alternatively, you can create a **.yaml** file with the same name as your input point cloud file in the same directory to achieve personalized reconstruction,
 though this requires some programming experience.
 
-Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory.
+**\[In\]** 
+- The ground and understory vegetation of the input single tree point cloud should be cleaned up and there should be no large non target tree point clouds, otherwise the reconstructed model will be distorted. In addition, the shorter the plants (usually referring to those with a height of only about 1m or less), the more likely the reconstructed model is to swell.
+- The names of the configuration files usually provide a brief summary of the skeletonization algorithm used, along with some additional information. For example: 
+    1. Use the configuration file marked "cpu" if the PyTorch version in the virtual environment is for CPU; use the configuration file marked "GPU" if the version is "cuXXX".
+    2. Use “LEAFOFF” for cases with sparse foliage, and use “LEAFON” for cases with abundant foliage.
 
-> **Note:**
->
-> Use the configuration file marked "cpu" if the PyTorch version in the virtual environment is for CPU; use the configuration file marked "GPU" if the version is "cuXXX".
+**\[Out\]** 
+- Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory.
 
 ### 2. Run QSM Viewer: Interactive Architectural Analysis Tool
 
