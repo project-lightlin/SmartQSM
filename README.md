@@ -90,14 +90,20 @@ you can select one based on your requirements.
 Alternatively, you can create a **.yaml** file with the same name as your input point cloud file in the same directory to achieve personalized reconstruction,
 though this requires some programming experience.
 
-**\[In\]** 
-- The ground and understory vegetation of the input single tree point cloud should be cleaned up and there should be no large non target tree point clouds, otherwise the reconstructed model will be distorted. In addition, the shorter the plants (usually referring to those with a height of only about 1m or less), the more likely the reconstructed model is to swell.
-- The names of the configuration files usually provide a brief summary of the skeletonization algorithm used, along with some additional information. For example: 
-    1. Use the configuration file marked "cpu" if the PyTorch version in the virtual environment is for CPU; use the configuration file marked "GPU" if the version is "cuXXX".
-    2. Use “LEAFOFF” for cases with sparse foliage, and use “LEAFON” for cases with abundant foliage.
+> **\[In\]** 
+> The ground and understory vegetation of the input individual tree point cloud should be cleaned up and there should be no large nontarget tree points, otherwise the reconstructed model will be distorted. 
+> In addition, the shorter the plants (usually referring to those with a height of only about 1m or less), the more likely the reconstructed model is to swell. 
+> You can import multiple point clouds from different folders in batch at once, and the program will process them sequentially.
+>
+> The names of the configuration files usually provide a brief summary of the skeletonization algorithm used, along with some additional information. Specifically,
+>    - Use the configuration file marked "cpu" if the PyTorch version in the virtual environment is for CPU; use the configuration file marked "GPU" if the version is "cuXXX".
+>    - Use “LEAFOFF” for cases with sparse foliage, and use “LEAFON” for cases with abundant foliage.
 
-**\[Out\]** 
-- Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory.
+
+> **\[Out\]** 
+> Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory. 
+> PLY and DXF files can be easily opened by [CloudCompare](https://www.cloudcompare.org/).
+> MAT File can be the input of some tools developed for [TreeQSM](https://github.com/InverseTampere/TreeQSM) such as [LeafGen](https://github.com/InverseTampere/leafgen). However, when using it, you need to transform the coordinates in `QSM.cylinder.start`. The recommended approach is to subtract `[QSM.treedata.X_m, QSM.treedata.Y_m, QSM.treedata.altitude_m]` from each coordinate. Otherwise, especially when a projected coordinate system is involved, the model cannot be displayed correctly.
 
 ### 2. Run QSM Viewer: Interactive Architectural Analysis Tool
 
@@ -110,6 +116,7 @@ python entrypoints/qsm_viewer.py
 ```bash
 python entrypoints/qsm_viewer.py PATH_OF_YOUR_qsm.mat
 ```
+Import the **\*_qsm.mat** file, which must have a corresponding and unmodified **\*_branches.ply**. You can switch languages in the Display - Modify Language section.
 
 ### 3. Run Parameter Exporter
 
@@ -117,11 +124,15 @@ python entrypoints/qsm_viewer.py PATH_OF_YOUR_qsm.mat
 python entrypoints/parameter_exporter.py
 ```
 
+Import one or more **\*_qsm.mat** files and convert them into an XLSX Excel workbook.
+
 ### 4. Run Stand Structurer: Calculation and tabular output tool for stand's spatial structure parameters
 
 ```bash
 python entrypoints/stand_structurer.py
 ```
+
+Use an Excel worksheet containing tree name, X coordinate, Y coordinate, tree height, DBH, mean crown width, and species to calculate stand's spatial structure parameters and output the results in an XLSX Excel file. The output worksheet from the output workbook by Parameter Exporter can be used as input once a species column is added.
 
 ## Known Bugs
 
