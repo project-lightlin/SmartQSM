@@ -28,7 +28,7 @@ You can also visit the [repo](https://github.com/project-lightlin/SmartQSM).
 
 ## Contributors
 
-- (Author) Dr. YANG Jie, Beijing Forestry University (nj_yang_jie@foxmail.com)
+- (Author) Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@foxmail.com](mailto:nj_yang_jie@foxmail.com))
 
 ## License
 
@@ -146,5 +146,20 @@ If the code is helpful for your work, please cite:
 ```
 test
 ```
+
+## For developers
+
+If
+
+- you need to manually adjust parameters for specific data,  
+- or you plan to further develop based on this code,
+
+you can refer to the documentation at:  
+https://project-lightlingithubio.readthedocs.io/en/latest/smartqsm-reference.html
+
+For secondary development, please make sure you comply with the license.  
+You will need to always click “No” when prompted to upgrade, or directly modify the `check_update` function in `entrypoints/_updater.py` to disable automatic updates.
+
+You may also package your modified code for secondary development and send it via [email](mailto:nj_yang_jie@foxmail.com) to the author, along with a brief description, your name, and contact information. If your contribution proves useful, it may be included in future releases and acknowledged in the **Contributors** section.
 
 ## Changelog
