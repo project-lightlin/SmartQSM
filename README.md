@@ -32,7 +32,7 @@ You can also visit the [repo](https://github.com/project-lightlin/SmartQSM).
 
 ## Contributors
 
-- (Author) Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@foxmail.com](mailto:nj_yang_jie@foxmail.com))
+- (Author) Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@bjfu.edu.cn](mailto:nj_yang_jie@bjfu.edu.cn))
 
 ## License
 
