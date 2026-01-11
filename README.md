@@ -1,4 +1,4 @@
-![SmartQSM logo](_assets/smartqsm-logo.png)
+![SmartQSM logo](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true)
 
 # SmartQSM (ISPRS Journal of Photogrammetry and Remote Sensing, 2026)
 
@@ -8,11 +8,11 @@ SmartQSM is a quantitative structure model for individual tree 3D reconstruction
 
 | Real-time processing and displaying | Interactive architectural analysis |
 |-------------------------------------|-----------------------------------|
-| ![Real-time processing and displaying](_assets/smartqsm-effect1.gif) | ![Interactive architectural analysis](_assets/smartqsm-effect2.gif) |
+| ![Real-time processing and displaying](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-effect1.gif?raw=true) | ![Interactive architectural analysis](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-effect2.gif?raw=true) |
 
 Support the extraction of 81 multiscale parameters including:
 
-![SmartQSM parameters](_assets/smartqsm-parameters.png)
+![SmartQSM parameters](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-parameters.png?raw=true)
 
 You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011).
 
