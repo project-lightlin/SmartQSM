@@ -1,6 +1,6 @@
 ![SmartQSM logo](_assets/smartqsm-logo.png)
 
-# SmartQSM (Accepted by ISPRS Journal of Photogrammetry and Remote Sensing!)
+# SmartQSM (ISPRS Journal of Photogrammetry and Remote Sensing, 2026)
 
 SmartQSM is a quantitative structure model for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
 
@@ -14,7 +14,7 @@ Support the extraction of 81 multiscale parameters including:
 
 ![SmartQSM parameters](_assets/smartqsm-parameters.png)
 
-You can find the definitions and calculations of these parameters in the [paper](<>).
+You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011).
 
 > **Note:**
 >
@@ -58,7 +58,7 @@ in the CONDA environment.
 
 *Or* you can:
 
-A. click the green *Code* button on the top right corner of the repo page,
+A. click the *Code* button on the top right corner of the repo page,
 
 B. click *Download ZIP*,
 
@@ -163,9 +163,7 @@ Visit https://github.com/isl-org/Open3D/issues/6840
 
 If the code is helpful for your work, please cite:
 
-```
-test
-```
+> \[1\] Yang, J., Zhang, H., Li, J., Yang, H., Gao, T., Yang, T., Wang, J., Zhang, X., Yun, T., Duanmu, Y., Chen, S., & Shi, Y. (2026). SmartQSM: a novel quantitative structure model using sparse-convolution-based point cloud contraction for reconstruction and analysis of individual tree architecture. *ISPRS Journal of Photogrammetry and Remote Sensing*, 232, 712-739. https://doi.org/10.1016/j.isprsjprs.2026.01.011
 
 Recommend that you indicate the version used (see `version.txt`) and the configuration file (and any changes you made) in your paper.
 
