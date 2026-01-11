@@ -24,8 +24,6 @@ You can find the definitions and calculations of these parameters in the [paper]
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author and we will review it as soon as possible!
 
-You can also visit the [repo](https://github.com/project-lightlin/SmartQSM).
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=project-lightlin/SmartQSM&type=date&legend=top-left)](https://www.star-history.com/#project-lightlin/SmartQSM&type=date&legend=top-left)
@@ -48,7 +46,7 @@ This repo has been verified and tested on Windows 10/11. Linux has not been test
 
 1. Please refer to [how-to-install-python-and-deep-learning-libraries](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html) to prepare the virtual environment.
 
-2. Install [Git](https://git-scm.com/) and clone the repo into the specified [working directory](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html#working_directory) using:
+2. Install [Git](https://git-scm.com/) and clone the repo into the specified [working directory](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html#working-directory) using:
 
 ```bash
 git clone https://github.com/project-lightlin/SmartQSM.git
