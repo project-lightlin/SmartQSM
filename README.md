@@ -14,7 +14,7 @@ Support the extraction of 81 multiscale parameters including:
 
 ![SmartQSM parameters](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-parameters.png?raw=true)
 
-You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011).
+You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011). Click [here to obtain the errata for the paper](https://github.com/project-lightlin/misc/blob/main/errata/errata_of_j.isprsjprs.2026.01.011.pdf).
 
 > **Note:**
 >
