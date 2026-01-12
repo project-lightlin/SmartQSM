@@ -161,7 +161,7 @@ Visit https://github.com/isl-org/Open3D/issues/6840
 
 If the code is helpful for your work, please cite:
 
-> \[1\] Yang, J., Zhang, H., Li, J., Yang, H., Gao, T., Yang, T., Wang, J., Zhang, X., Yun, T., Duanmu, Y., Chen, S., & Shi, Y. (2026). SmartQSM: a novel quantitative structure model using sparse-convolution-based point cloud contraction for reconstruction and analysis of individual tree architecture. *ISPRS Journal of Photogrammetry and Remote Sensing*, 232, 712-739. https://doi.org/10.1016/j.isprsjprs.2026.01.011
+> \[1\] Yang, J., Zhang, H., Li, J., Yang, H., Gao, T., Yang, T., Wang, J., Zhang, X., Yun, T., Duanmu, Y., Chen, S., & Shi, Y. (2026). SmartQSM: a novel quantitative structure model using sparse-convolution-based point cloud contraction for reconstruction and analysis of individual tree architecture. *ISPRS Journal of Photogrammetry and Remote Sensing*, *232*, 712–739. https://doi.org/10.1016/j.isprsjprs.2026.01.011
 
 Recommend that you indicate the version used (see `version.txt`) and the configuration file (and any changes you made) in your paper.
 
