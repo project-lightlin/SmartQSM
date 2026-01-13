@@ -92,10 +92,12 @@ you can select one based on your requirements.
 Alternatively, you can create a **.yaml** file with the same name as your input point cloud file in the same directory to achieve personalized reconstruction,
 though this requires some programming experience.
 
-> **\[In\]** 
+> *Input*
 >
-> The ground and understory vegetation of the input individual tree point cloud should be cleaned up and there should be no large nontarget tree points, otherwise the reconstructed model will be distorted. 
-> In addition, the shorter the plants (usually referring to those with a height of only about 1m or less), the more likely the reconstructed model is to swell. 
+> **Warning**: The ground and understory vegetation of the input individual tree point cloud should be cleaned up and there should be no large nontarget tree points, otherwise the reconstructed model will be distorted. 
+>
+> **Warning**: The shorter the plants (usually referring to those with a height of only about 1m or less), the more likely the reconstructed model is to swell. 
+>
 > You can import multiple point clouds from different folders in batch at once, and the program will process them sequentially.
 >
 > The names of the configuration files usually provide a brief summary of the skeletonization algorithm used, along with some additional information. Specifically,
@@ -103,8 +105,8 @@ though this requires some programming experience.
 >    - Use “LEAFOFF” for cases with sparse foliage, and use “LEAFON” for cases with abundant foliage.
 
 
-> **\[Out\]** 
->
+> *Output*
+> 
 > Each processed individual tree point cloud will generate five output files (**\*_active_crown.ply**, **\*_branches.ply**, **\*_crown.ply**, **\*_qsm.mat** and **\*_skeleton.dxf**) in the same directory. 
 > PLY and DXF files can be easily opened by [CloudCompare](https://www.cloudcompare.org/).
 > MAT file can be the input of some tools developed for [TreeQSM](https://github.com/InverseTampere/TreeQSM) such as [LeafGen](https://github.com/InverseTampere/leafgen). However, when using it, you need to transform the coordinates in `QSM.cylinder.start`. The recommended solution is to subtract `[QSM.treedata.X_m, QSM.treedata.Y_m, QSM.treedata.altitude_m]` from each coordinate. Otherwise, especially when a projected coordinate system is involved, the model cannot be displayed correctly.
