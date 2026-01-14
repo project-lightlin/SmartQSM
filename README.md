@@ -36,7 +36,7 @@ You can find the definitions and calculations of these parameters in the [paper]
 
 This project is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html).
 
-To report potential misuse of this project (e.g., for illegal activities or harassment), please contact [yangtd@ifrit.ac.cn](mailto:yangtd@ifrit.ac.cn) with a detailed description and any supporting evidence. Thank you for helping us make our community a better place!
+To report any (possible) abuse or infringement behavior, please contact [yangtd@ifrit.ac.cn](mailto:yangtd@ifrit.ac.cn) with a detailed description and any supporting evidence. Thank you for helping us make our community a better place!
 
 ## Installation and Startup
 
