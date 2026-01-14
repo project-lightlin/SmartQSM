@@ -102,7 +102,7 @@ though this requires some programming experience.
 >
 > The names of the configuration files usually provide a brief summary of the skeletonization algorithm used, along with some additional information. Specifically,
 >    - Use the configuration file marked "cpu" if the PyTorch version in the virtual environment is for CPU; use the configuration file marked "GPU" if the version is "cuXXX".
->    - Use “LEAFOFF” for cases with sparse foliage, and use “LEAFON” for cases with abundant foliage.
+>    - Use “LEAFOFF” for cases with sparse or absent foliage, and use “LEAFON” for cases with abundant foliage.
 
 
 > *Output*
