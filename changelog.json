@@ -3,9 +3,24 @@
         {
             "version": "1.6.0",
             "codename": "",
-            "released": "2026/02/18",
+            "released": "2026/03/07",
             "changelog": [
-                
+                {
+                    "title": "Tree parameter <i>Girth</i> (also called Circumference, Girth at Breast Height GBH) can now be extracted.",
+                    "released": "2026/02/27",
+                    "label": "Added",
+                    "module": "core.parameter_extraction",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "Using the point cloud extracted within ±3 cm of breast height, compute the perimeter of its convex hull after projecting onto the horizontal plane as Girth. If the ratio of Girth to DBH is not close to Pi, possible causes include:<ul><li>local point cloud data missing (&lt;Pi);</li><li>multiple branches at breast height (&gt;Pi);</li><li>abnormal inclination of the trunk at breast height (&gt;Pi).</li></ul>"
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
                 {
                     "title": "Fixed the bug in the upgrade program. Currently, it is necessary to manually replace _updater.py for the upgrade to work properly.",
                     "released": "2026/02/26",
