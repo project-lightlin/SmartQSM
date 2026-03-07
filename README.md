@@ -33,11 +33,11 @@ You can find the definitions and calculations of these parameters in the [paper]
 ## Contributors
 
 ### Author
-Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@bjfu.edu.cn](mailto:nj_yang_jie@bjfu.edu.cn))
+@teduzhu Dr. YANG Jie, Beijing Forestry University ([nj_yang_jie@bjfu.edu.cn](mailto:nj_yang_jie@bjfu.edu.cn))
 ### Facilitator
-Dr. JIANG Kang, Nanjing Forestry University 
+@jk160804211 Dr. JIANG Kang, Nanjing Forestry University 
 ### Tester
-Master LU Nanbo, Central South University of Forestry & Technology
+@Luneighbour Master LU Nanbo, Central South University of Forestry & Technology
 ### Special Thanks
 
 ## License
