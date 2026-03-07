@@ -1,0 +1,36 @@
+{
+    "releases": [
+        {
+            "version": "1.6.0",
+            "codename": "",
+            "released": "2026/02/18",
+            "changelog": [
+                
+                {
+                    "title": "Fixed the bug in the upgrade program. Currently, it is necessary to manually replace _updater.py for the upgrade to work properly.",
+                    "released": "2026/02/26",
+                    "label": "Added",
+                    "module": "entrypoints.smartqsm",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Bug fixes, renaming, and performance optimizations.",
+                    "released": "2026/02/16",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        }
+    ]
+}

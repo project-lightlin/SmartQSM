@@ -20,14 +20,14 @@ from .data_type import Branch
 import numpy as np
 import pandas as pd
 from utils.pandas_extra import append as dataframe_append
-from typing import Dict, Set, Callable, Optional
+from typing import Dict, Set, Callable
 from utils.arterial_snake import calculate_rough_volume, generate_arterial_snake
 import open3d as o3d
 from scipy.spatial import ConvexHull
-from utils.numpy_extra import calculate_heading_angle, calculate_distances_from_points_to_line, calculate_direction_of_ordered_points, calculate_distances_from_points_to_line
-from shapely.geometry import Point, Polygon, LineString
+from utils.numpy_extra import calculate_heading_angle, calculate_distances_from_points_to_line, calculate_direction_of_ordered_points, calculate_distances_from_points_to_line, calculate_angle_between_vectors, normalize
+from shapely.geometry import Point, Polygon
 from shapely.ops import nearest_points
-import networkx as nx
+from sklearn.neighbors import LocalOutlierFactor
 
 def _sample_polyline(points, max_radius, step):
     points = np.asarray(points)
@@ -66,9 +66,12 @@ class ParameterExtraction:
     _tree_parameter_to_dtype: Dict[str, str]
     _branch_parameter_to_dtype: Dict[str, str]
     _degree_resolution: float
-    _upper_bound_of_crown_radius: float
+    _crown_radius_upper_bound: float
+    _disc_thickness: float
+    _n_neighbors_for_lof: int
+    _min_pts_for_lof: int
 
-    def __init__(self, branch_id_to_branch: Dict[int, Branch], points: np.ndarray, global_shift: np.ndarray, measurement_radius: float = 0.05, sampling_size: float = 0.005, degree_resolution: float = 1.0, upper_bound_of_crown_radius: float = 1e4) -> None:
+    def __init__(self, branch_id_to_branch: Dict[int, Branch], points: np.ndarray, global_shift: np.ndarray, measurement_radius: float = 0.05, sampling_size: float = 0.005, degree_resolution: float = 1.0, crown_radius_upper_bound: float = 1e4, disc_thickness: float = 0.05, n_neighbors_for_lof: int = 2, min_pts_for_lof: int = 20) -> None:
         self._branch_id_to_branch = branch_id_to_branch
         self._points = points
         self._global_shift = global_shift
@@ -76,8 +79,11 @@ class ParameterExtraction:
         self._measurement_radius = measurement_radius
         self._sampling_size = sampling_size
         self._degree_resolution = degree_resolution
-        self._upper_bound_of_crown_radius = upper_bound_of_crown_radius
-
+        self._crown_radius_upper_bound = crown_radius_upper_bound
+        self._disc_thickness = disc_thickness
+        self._n_neighbors_for_lof = n_neighbors_for_lof
+        self._min_pts_for_lof = min_pts_for_lof
+        
         self._tree_parameter_to_dtype = {
             "X_m": "float64",
             "Y_m": "float64",
@@ -86,6 +92,7 @@ class ParameterExtraction:
             "max_order": "uint64",
             "height_m": "float32",
             "DBH_cm": "float32",
+            "girth_m": "float32",
             "ground_diameter_cm": "float32",
             "bole_height_m": "float32",
             "diameter_at_bole_height_cm": "float32",
@@ -201,6 +208,24 @@ class ParameterExtraction:
         self.tree_dataframe.loc[0, "num_branches"] = len(self._branch_id_to_branch)
         self.tree_dataframe.loc[0, "height_m"] = tree_height
 
+        # Girth
+        points_at_breast_height: np.ndarray = self._points[(self._points[:, 2] - z_min >= 1.3 - self._disc_thickness / 2.) & (self._points[:, 2] - z_min <= 1.3 + self._disc_thickness / 2.)]
+        girth: float = 0.0
+        try:
+            projected_points: np.ndarray = points_at_breast_height[:, :2]
+            try:
+                projected_points = np.unique(projected_points, axis=0)
+                if len(projected_points) >= self._min_pts_for_lof:
+                    projected_points = projected_points[
+                        LocalOutlierFactor(n_neighbors=self._n_neighbors_for_lof).fit_predict(projected_points) == 1
+                    ]
+            except Exception:
+                pass
+            girth = ConvexHull(projected_points).area
+        except Exception:
+            pass
+        self.tree_dataframe.loc[0, "girth_m"] = girth
+
         # Trunk diameters & length
         ground_diameter: float = 0.
         dbh: float = 0.
@@ -242,12 +267,12 @@ class ParameterExtraction:
             base_height: float 
             d_base: float 
             try:
-                d_base = branch.radii[branch.active_medial_point_start_id] * 2.
-                p_base: np.ndarray = branch.medial_points[branch.active_medial_point_start_id]
-                p_start: np.ndarray = branch.medial_points[branch.active_medial_point_start_id + 1]
+                d_base = branch.radii[branch.active_medial_point_start_idx] * 2.
+                p_base: np.ndarray = branch.medial_points[branch.active_medial_point_start_idx]
+                p_start: np.ndarray = branch.medial_points[branch.active_medial_point_start_idx + 1]
                 base_to_start_direction: np.ndarray = p_start - p_base
                 base_to_start_direction /= np.linalg.norm(base_to_start_direction)
-                base_height = branch.medial_points[branch.active_medial_point_start_id][2] - (d_base / 2.) * np.sqrt(1. - np.clip(np.dot(base_to_start_direction, [0., 0., 1.]).item() ** 2., 0., 1.)) - z_min
+                base_height = branch.medial_points[branch.active_medial_point_start_idx][2] - (d_base / 2.) * np.sqrt(1. - np.clip(np.dot(base_to_start_direction, [0., 0., 1.]).item() ** 2., 0., 1.)) - z_min
             except Exception:
                 d_base = branch.radii[-1] * 2.
                 p_base: np.ndarray = branch.medial_points[-2]
@@ -271,11 +296,11 @@ class ParameterExtraction:
             cumulative_lengths_of_points: np.ndarray = np.array([0.0])
             mid_length_diameter: float = 2. * branch.radii[-1]
             try:
-                line_lengths = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_id + 1:] - branch.medial_points[branch.active_medial_point_start_id:-1], axis=-1)
+                line_lengths = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_idx + 1:] - branch.medial_points[branch.active_medial_point_start_idx:-1], axis=-1)
                 cumulative_lengths_of_points = np.concatenate([[0.0], np.cumsum(line_lengths)])
-                for j in range(len(branch.medial_points) - branch.active_medial_point_start_id - 1):
-                    r_bottom: float = branch.radii[branch.active_medial_point_start_id + j]
-                    r_top: float = branch.radii[branch.active_medial_point_start_id + j + 1]
+                for j in range(len(branch.medial_points) - branch.active_medial_point_start_idx - 1):
+                    r_bottom: float = branch.radii[branch.active_medial_point_start_idx + j]
+                    r_top: float = branch.radii[branch.active_medial_point_start_idx + j + 1]
                     if cumulative_lengths_of_points[j] <= cumulative_lengths_of_points[-1] / 2. and cumulative_lengths_of_points[j + 1] >= cumulative_lengths_of_points[-1] / 2.:
                         mid_length_diameter = 2. * (
                             r_top + (r_bottom - r_top) * (cumulative_lengths_of_points[j + 1] - cumulative_lengths_of_points[-1] / 2.) / (cumulative_lengths_of_points[j + 1] - cumulative_lengths_of_points[j])
@@ -505,7 +530,9 @@ class ParameterExtraction:
         trunk_chord_length: float = np.linalg.norm(trunk_displacement)
         self.tree_dataframe.loc[0, "max_spread_m"] = np.linalg.norm(trunk.medial_points[1:, :2] - trunk.medial_points[0, :2], axis=-1).max()
         self.tree_dataframe.loc[0, "azimuth_deg"] = calculate_heading_angle(trunk_displacement[:2]) 
-        self.tree_dataframe.loc[0, "zenith_deg"] = np.rad2deg(np.arccos(np.clip(np.dot(np.array([0., 0., 1.]), trunk_displacement / trunk_chord_length).item(), -1.0, 1.0)))
+        self.tree_dataframe.loc[0, "zenith_deg"] = calculate_angle_between_vectors(
+            np.array([0., 0., 1.]), normalize(trunk_displacement)
+        )
         self.tree_dataframe.loc[0, "chord_length_m"] = trunk_chord_length
         self.tree_dataframe.loc[0, "arc_height_m"] = np.max(calculate_distances_from_points_to_line(trunk.medial_points, trunk.medial_points[0], trunk.medial_points[-1]))
         for branch_id, branch in self._branch_id_to_branch.items():
@@ -517,14 +544,16 @@ class ParameterExtraction:
             base_offset: float = 0.0
             base_azimuth_angle: float = 0.0
             try:
-                branch_displacement: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_id]
+                branch_displacement: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_idx]
                 branch_chord_length = np.linalg.norm(branch_displacement)
                 azimuth_angle = calculate_heading_angle(branch_displacement[:2]) 
-                zenith_angle = np.rad2deg(np.arccos(np.clip(np.dot(np.array([0., 0., 1.]), branch_displacement / (branch_chord_length + 1e-6)).item(), -1.0, 1.0)))
-                arc_height = np.max(calculate_distances_from_points_to_line(branch.medial_points, branch.medial_points[branch.active_medial_point_start_id], branch.medial_points[-1]))
-                base_offset = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_id][:2] - tree_position)
-                base_azimuth_angle = calculate_heading_angle(branch.medial_points[branch.active_medial_point_start_id][:2] - tree_position)
-                max_spread = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_id + 1:, :2] - branch.medial_points[branch.active_medial_point_start_id, :2], axis=-1).max()
+                zenith_angle = calculate_angle_between_vectors(
+                    np.array([0., 0., 1.]), normalize(branch_displacement)
+                )
+                arc_height = np.max(calculate_distances_from_points_to_line(branch.medial_points, branch.medial_points[branch.active_medial_point_start_idx], branch.medial_points[-1]))
+                base_offset = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_idx][:2] - tree_position)
+                base_azimuth_angle = calculate_heading_angle(branch.medial_points[branch.active_medial_point_start_idx][:2] - tree_position)
+                max_spread = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_idx + 1:, :2] - branch.medial_points[branch.active_medial_point_start_idx, :2], axis=-1).max()
             except Exception:
                 pass
             self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "max_spread_m"] = max_spread
@@ -553,12 +582,12 @@ class ParameterExtraction:
 
             height_difference: float = 0.0
             try:
-                segmentwise_directions: np.ndarray = branch.medial_points[branch.active_medial_point_start_id + 1:] - branch.medial_points[branch.active_medial_point_start_id:-1]
+                segmentwise_directions: np.ndarray = branch.medial_points[branch.active_medial_point_start_idx + 1:] - branch.medial_points[branch.active_medial_point_start_idx:-1]
                 segmentwise_directions: np.ndarray = segmentwise_directions / np.linalg.norm(segmentwise_directions, axis=-1, keepdims=True)
                 segmentwise_directions = np.vstack([segmentwise_directions, segmentwise_directions[-1]])
-                segmentwise_vertical_offsets: np.ndarray = branch.radii[branch.active_medial_point_start_id:] * np.sqrt(1 - np.clip(np.dot(segmentwise_directions, np.array([0., 0., 1.])) ** 2,  0., 1.))
-                upper_bounds: np.ndarray = branch.medial_points[branch.active_medial_point_start_id:, 2] + segmentwise_vertical_offsets
-                lower_bounds: np.ndarray = branch.medial_points[branch.active_medial_point_start_id:, 2] - segmentwise_vertical_offsets
+                segmentwise_vertical_offsets: np.ndarray = branch.radii[branch.active_medial_point_start_idx:] * np.sqrt(1 - np.clip(np.dot(segmentwise_directions, np.array([0., 0., 1.])) ** 2,  0., 1.))
+                upper_bounds: np.ndarray = branch.medial_points[branch.active_medial_point_start_idx:, 2] + segmentwise_vertical_offsets
+                lower_bounds: np.ndarray = branch.medial_points[branch.active_medial_point_start_idx:, 2] - segmentwise_vertical_offsets
                 height_difference = np.max(upper_bounds) - np.min(lower_bounds)
             except Exception:
                 pass
@@ -573,7 +602,7 @@ class ParameterExtraction:
                 parent_local_branch_direction /= np.linalg.norm(parent_local_branch_direction)
             current_local_branch_direction: np.ndarray = np.array([0., 0., 0.])
             try:
-                current_branch_samples: np.ndarray = _sample_polyline(branch.medial_points[branch.active_medial_point_start_id:], self._measurement_radius, self._sampling_size)
+                current_branch_samples: np.ndarray = _sample_polyline(branch.medial_points[branch.active_medial_point_start_idx:], self._measurement_radius, self._sampling_size)
                 if current_branch_samples.shape[0] > 1:
                     current_local_branch_direction = calculate_direction_of_ordered_points(current_branch_samples)
                     current_local_branch_direction /= np.linalg.norm(current_local_branch_direction)
@@ -586,16 +615,22 @@ class ParameterExtraction:
             vertical_deflection_angle: float = 0.
             if np.linalg.norm(parent_local_branch_direction) != 0.:
                 if np.linalg.norm(current_local_branch_direction) != 0.:
-                    branching_angle = np.rad2deg(np.arccos(np.clip(np.dot(parent_local_branch_direction, current_local_branch_direction).item(), -1.0, 1.0)))
-                    vertical_deflection_angle = np.rad2deg(np.arccos(np.clip(np.dot(np.array([0., 0., 1.]), current_local_branch_direction).item(), -1.0, 1.0)))
+                    branching_angle = calculate_angle_between_vectors(
+                        parent_local_branch_direction, current_local_branch_direction
+                    )
+                    vertical_deflection_angle = calculate_angle_between_vectors(
+                        np.array([0., 0., 1.]), current_local_branch_direction
+                    )
 
                 try:
-                    arc_direction: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_id]
+                    arc_direction: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_idx]
                     if np.linalg.norm(arc_direction) != 0.:
                         arc_direction /= np.linalg.norm(arc_direction)
-                        tip_deflection_angle = np.rad2deg(np.arccos(np.clip(np.dot(parent_local_branch_direction, arc_direction).item(), -1.0, 1.0)))
+                        tip_deflection_angle = calculate_angle_between_vectors(
+                            parent_local_branch_direction, arc_direction
+                        )
                     branching_radius = np.max(
-                        calculate_distances_from_points_to_line(branch.medial_points[branch.active_medial_point_start_id:], joint_point, joint_point + parent_local_branch_direction)
+                        calculate_distances_from_points_to_line(branch.medial_points[branch.active_medial_point_start_idx:], joint_point, joint_point + parent_local_branch_direction)
                     )
                 except Exception:
                     pass
@@ -644,7 +679,7 @@ class ParameterExtraction:
             while parent_branch_id > 0:
                 parent_branch: Branch = self._branch_id_to_branch[parent_branch_id]
                 try:
-                    polyline: np.ndarray = np.array(parent_branch.medial_points[parent_branch.active_medial_point_start_id:joint_point_id+1])
+                    polyline: np.ndarray = np.array(parent_branch.medial_points[parent_branch.active_medial_point_start_idx:joint_point_id+1])
                     if len(polyline) > 2:
                         diffs = polyline[1:] - polyline[:-1]
                         insertion_distance += np.linalg.norm(diffs, axis=1).sum()

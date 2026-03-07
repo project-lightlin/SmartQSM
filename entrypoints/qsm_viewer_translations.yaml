@@ -64,6 +64,7 @@
   max_order: 最大枝条级别
   height_m: 树高(m)
   DBH_cm: 胸径(cm)
+  girth_m: 胸围(m)
   ground_diameter_cm: 地径(cm)
   bole_height_m: 枝下高(m)
   diameter_at_bole_height_cm: 枝下高处直径(cm)
@@ -143,6 +144,7 @@ English:
   max_order: Max branch order
   height_m: Tree height (m)
   DBH_cm: DBH (cm)
+  girth_m: Girth (m)
   ground_diameter_cm: Ground diameter (cm)
   bole_height_m: Bole height (m)
   diameter_at_bole_height_cm: Diameter at bole height (cm)

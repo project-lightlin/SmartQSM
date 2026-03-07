@@ -1,5 +1,11 @@
 import numpy as np
 from sklearn.decomposition import PCA
+from typing import Tuple
+
+def normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    v_norm = np.linalg.norm(v, axis=-1, keepdims=True)
+    v_norm = np.maximum(v_norm, eps)
+    return v / v_norm
 
 def calculate_three_point_curvature(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
     # k = 4S(Triangle ABC)/(abc) = 2 * |(p2-p1) × (p3-p2)| / (|p2-p1| * |p3-p2| * |p3-p1|)
@@ -106,7 +112,7 @@ def sample_line_segment(p1, p2, max_step=0.001):
     points = p1 + np.outer(t_values,  p2 - p1)
     return points
 
-def point_to_segment_distances_3d(point: np.ndarray, segment_starts: np.ndarray, segment_ends: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+def point_to_segment_distances_3d(point: np.ndarray, segment_starts: np.ndarray, segment_ends: np.ndarray, eps: float = 1e-12) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     K = np.asarray(point, dtype=float).reshape(1, 3)
     M = np.asarray(segment_starts, dtype=float)
     Np = np.asarray(segment_ends, dtype=float)

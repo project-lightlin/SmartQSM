@@ -24,6 +24,7 @@ import networkx as nx
 import matplotlib.cm as cm
 from utils.networkx_extra import weight_edges_by_node_data
 from .pipeline import Pipeline
+import itertools
 
 class SkeletonizationBase(Pipeline):
     _edge_weight_function_to_fn: Dict[str, Callable[[Tuple[np.ndarray, Optional[np.ndarray]], Tuple[np.ndarray, Optional[np.ndarray]]], float]]
@@ -91,23 +92,36 @@ class SkeletonizationBase(Pipeline):
             # Do not execute. 
             pass
         else:
-            simplices: np.ndarray = Delaunay(self._skeletal_points).simplices
-            start_nodes: np.ndarray = np.concatenate([
-                simplices[:, 0],
-                simplices[:, 0],
-                simplices[:, 0],
-                simplices[:, 1],
-                simplices[:, 1],
-                simplices[:, 2],
-            ])
-            end_nodes: np.ndarray = np.concatenate([
-                simplices[:, 1],
-                simplices[:, 2],
-                simplices[:, 3],
-                simplices[:, 2],
-                simplices[:, 3],
-                simplices[:, 3],
-            ])
+            start_nodes: np.ndarray
+            end_nodes: np.ndarray
+            try:
+                simplices: np.ndarray = Delaunay(self._skeletal_points).simplices
+                start_nodes = np.concatenate([
+                    simplices[:, 0],
+                    simplices[:, 0],
+                    simplices[:, 0],
+                    simplices[:, 1],
+                    simplices[:, 1],
+                    simplices[:, 2],
+                ])
+                end_nodes = np.concatenate([
+                    simplices[:, 1],
+                    simplices[:, 2],
+                    simplices[:, 3],
+                    simplices[:, 2],
+                    simplices[:, 3],
+                    simplices[:, 3],
+                ])
+            except Exception:
+                if self._skeletal_points.shape[0] <= 1:
+                    raise ValueError("Cannot construct a graph with less than 2 points.")
+                # Generate a Complete graph
+                # Although the reconstruction of small trees and sparse point clouds is unreliable, efforts should be made to ensure that the process runs smoothly
+                edges: np.ndarray = np.array(
+                    list(itertools.combinations(range(self._skeletal_points.shape[0]), 2))
+                )
+                start_nodes = edges[:, 0]
+                end_nodes = edges[:, 1]
             
             edges: np.ndarray
             # Remove duplication

@@ -1,3 +1,5 @@
+networkx
+filelock
 tensorboard
 tensorboardX
 open3d
@@ -15,3 +17,6 @@ shapely
 numba
 pyperclip
 pypcd4
+pywebview
+beautifulsoup4
+cvxpy

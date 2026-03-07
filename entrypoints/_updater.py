@@ -26,6 +26,12 @@ import shutil
 import tkinter as tk
 from tkinter import messagebox
 import stat
+import urllib
+import json
+import webview
+import tempfile
+from typing import Union
+from bs4 import BeautifulSoup 
 
 _root = None
 
@@ -63,6 +69,89 @@ def askyesno(title, message):
     return _with_topmost(messagebox.askyesno, title, message)
 
 ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
+
+def show_changelog(current_version: Union[str, Version], json_source: str, gui: bool = True) -> bool:
+    if type(current_version) == str:
+        current_version = Version(current_version)
+
+    json_data = None
+    try:
+        with urllib.request.urlopen(json_source) as response:
+            json_data = json.loads(response.read().decode('utf-8'))
+    except Exception:
+        # For debugging: json_source is full content of a json file
+        try:
+            json_data = json.loads(json_source)
+        except Exception:
+            pass
+
+    changelog_html = "<!DOCTYPE html><head><meta charset=\"UTF-8\"></head><body>"
+
+    has_new_version = False
+    if json_data is None:
+        return False
+    else:
+        for release in json_data.get("releases", []):
+            release_version = Version(release.get("version", "0.0.0"))
+            if release_version > current_version:
+                has_new_version = True
+                version = release.get("version", "")
+                codename = release.get("codename", "")
+                released = release.get("released", "")
+                changelog_html += f"<h2>Ver {version} {codename} <sup>released on {released}</sup></h2>"
+                
+                changelog_items = release.get("changelog", [])
+                for idx, item in enumerate(changelog_items, 1):
+                    label = item.get("label", "")
+                    title = item.get("title", "")
+                    
+                    changelog_html += f"<h4>{idx}. <sup style=\"background-color: #C0C0C0;\">{label}</sup> {title}</h4>"
+                    
+                    desc_groups = item.get("description_group", [])
+                    if desc_groups:
+                        for desc in desc_groups:
+                            if desc.get("media_type") == "text/html":
+                                body = desc.get("body", "")
+                                changelog_html += f"{body}"
+                            elif desc.get("media_type") == "text/plain":
+                                body = desc.get("body", "")
+                                changelog_html += f"<p>{body}</p>"
+                            else:
+                                raise NotImplementedError(f"Unsupported media_type {desc.get("media_type")}")
+
+    if not has_new_version:
+        changelog_html += "<h2>The current version is the latest, no update is required.</h2>"
+
+    changelog_html += "</body></html>"
+
+    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.html', encoding='utf-8')
+    temp_file.write(changelog_html)
+    temp_file.close()
+    temp_html_path = temp_file.name
+    if gui:
+        try:
+            webview.create_window(
+                title="Changelog",
+                url=temp_html_path,
+                width=800,
+                height=600,
+                resizable=True
+            )
+            webview.start()
+        finally:
+            if temp_html_path and os.path.exists(temp_html_path):
+                try:
+                    os.unlink(temp_html_path)
+                except:
+                    pass
+    else:
+        soup = BeautifulSoup(changelog_html, "html.parser")
+        print("========== Changelog ==========")
+        plain_text = soup.get_text(strip=True, separator="\n")
+        print(plain_text)
+        print("===============================")
+        input("Press ENTER to continue.")
+    return True
 
 def copy_tree_overwrite(src, dst):
     if not os.path.exists(dst):
@@ -135,6 +224,21 @@ def _check_update(gui: bool = True) -> int:
             print("Invalid input. Skipped.\n")
             return 0
     
+    while not show_changelog(local_version, "https://raw.githubusercontent.com/project-lightlin/SmartQSM/refs/heads/main/changelog.json", gui):
+        message = "Network communication is not smooth, do you want to retry to show the changelog? [YES/NO]"
+        if gui:
+            if not askyesno("Warning", message):
+                break
+        else:
+            answer = input(message).strip().lower()
+            while True:
+                if answer == "yes":
+                    break
+                elif answer == "no":
+                    break
+            if answer == "no":
+                break
+
     # check git
     try:
         subprocess.run(
@@ -201,7 +305,28 @@ def _check_update(gui: bool = True) -> int:
 
     # Clone
     try:
-        cmd = ["git","clone", "https://github.com/project-lightlin/SmartQSM.git", temp_dir]
+        # Mainly used for configuring proxy
+        git_config_path = os.path.join(ROOT_DIR, "entrypoints/git_config.txt")
+        additional_arguments = []
+        if os.path.exists(git_config_path):
+            try:
+                with open(git_config_path) as f:
+                    git_config_lines = f.readlines()
+                for line in git_config_lines:
+                    argument = line.strip()
+                    if argument != "":
+                        if argument[0] != "#":
+                            additional_arguments.append(argument)
+            except Exception:
+                pass
+
+        cmd = ["git","clone"]
+        for argument in additional_arguments:
+            cmd += ["-c", argument]
+        cmd += ["https://github.com/project-lightlin/SmartQSM.git", temp_dir]
+
+        print("Command: "," ".join(cmd))
+
         p = subprocess.Popen(
             cmd,
             text=True,
@@ -220,7 +345,7 @@ def _check_update(gui: bool = True) -> int:
             return 1
 
     # Confirm
-    message = "The update has been downloaded. Please confirm that there are no other running instances before upgrading!"
+    message = "The update has been downloaded. Please confirm that there are no other running instances before upgrading! Please note that the prompt for success or failure will only appear after a period of time after the program terminates. Please be patient."
     if gui:
         if not askyesno("Info", message):
             return 1
@@ -378,12 +503,13 @@ def main():
             if hasattr(mod, "run_post_install"):
                 mod.run_post_install(root_dir)
         except Exception:
-            message = f"{traceback.format_exc()}\nFailed to execute post_installation.py. Please try manually executing it."
+            message = f"{traceback.format_exc()}\n------------------------\nThe necessary features have been installed, but the post installation failed.\nPlease manually execute \"python.exe post_installation.py\" in the correct CONDA environment and under the correct working directory later."
             if gui:
                 showerror("Error", message)
             else:
                 print(message)
                 exec("")
+            sys.exit(1)
 
     version_file = os.path.join(root_dir, "version.txt")
     version = "0.0.0"
@@ -393,19 +519,15 @@ def main():
     except Exception:
         pass
 
-    message = f"SmartQSM has been successfully updated to version {version}!\n\nDo you want to know what has been updated?"
+    message = f"SmartQSM has been successfully updated to version {version}!"
     if gui:
         root = tk.Tk()
         root.withdraw()
-        if askyesno("Info", message):
-            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
+        showinfo("Info", message)
         root.destroy()
     else:
         print(message)
-        answer = input("[YES/ANY]").strip().lower()
-        if answer == "yes":
-            webbrowser.open("https://github.com/project-lightlin/SmartQSM")
-        exec("")
+        input("Press ENTER to continue")
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -420,8 +542,11 @@ if __name__ == "__main__":
             [sys.executable, worker_path, temp_dir, ROOT_DIR, str(1 if gui else 0)],
             close_fds=True,
             stdout=sys.stdout,
-            stderr=sys.stderr
+            stderr=sys.stderr,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
         )
+        
+        os._exit(0)
 
     except Exception:
         message = f"{traceback.format_exc()}\nFailed to start updater. Please try again later."

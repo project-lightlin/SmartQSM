@@ -37,6 +37,12 @@ class FastLayerwiseClustering(CoreAlgorithmBase):
     _height_diameter_ratio: float
     _max_layer_spacing: float
 
+    _point_ids_per_patch: Optional[List[Optional[np.ndarray]]]
+    _distances_to_nearest_patch_center: Optional[np.ndarray]
+    _patch_center_ids: Optional[np.ndarray]
+    _patch_neighborhood: Optional[nx.Graph]
+    
+
     def __init__(self, *, verbose: bool = False, neighborhood_size: float = 0.05, min_layer_height: float = 0.01, max_layer_height: Optional[float] = None, height_diameter_ratio: float = 300, max_layer_spacing: float = 0.05,cluster_algorithm: str = "dbscan",  **kwargs) -> None:
         super().__init__(verbose=verbose)
         self._neighborhood_size = neighborhood_size
@@ -45,7 +51,16 @@ class FastLayerwiseClustering(CoreAlgorithmBase):
         self._height_diameter_ratio = height_diameter_ratio
         self._max_layer_spacing = max_layer_spacing
 
+        self._clear()
+
         self._initialize_cluster_algorithm(cluster_algorithm, kwargs)
+        return
+    
+    def _clear(self) -> None:
+        self._point_ids_per_patch = None
+        self._distances_to_nearest_patch_center = None
+        self._patch_center_ids = None
+        self._patch_neighborhood = None
         return
     
     def get_pipeline(self):
@@ -74,8 +89,8 @@ class FastLayerwiseClustering(CoreAlgorithmBase):
         # If a point cloud graph is directly generated, both k-nearest neighbors and Delaunay tetrahedration will be very slow and memory-consuming. 
         # Using the strategy of TreeQSM, the point cloud is divided into small patches, and the points within these small patches are sufficiently close to each other.
         patch_ids_of_point: np.ndarray = -np.ones(len(self._points), dtype=int)
-        self._distances_to_nearest_patch_center: np.ndarray = np.full(len(self._points), fill_value=np.inf)
-        patch_center_ids: List[np.ndarray] = []
+        self._distances_to_nearest_patch_center = np.full(len(self._points), fill_value=np.inf)
+        patch_center_ids: List[int] = []
         kdtree: KDTree = KDTree(self._points)
         edges: Union[List[np.ndarray], np.ndarray] = []
         for point_id in np.random.permutation(len(self._points)):

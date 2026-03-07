@@ -10,17 +10,19 @@ SmartQSM is a quantitative structure model for individual tree 3D reconstruction
 |-------------------------------------|-----------------------------------|
 | ![Real-time processing and displaying](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-effect1.gif?raw=true) | ![Interactive architectural analysis](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-effect2.gif?raw=true) |
 
-Support the extraction of 81 multiscale parameters including:
+Support the extraction of 82 multiscale parameters including:
 
 ![SmartQSM parameters](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-parameters.png?raw=true)
 
-You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011). Click [here to obtain the errata for the paper](https://github.com/project-lightlin/misc/blob/main/errata/errata_of_j.isprsjprs.2026.01.011.pdf).
+You can find the definitions and calculations of these parameters in the [paper]( https://doi.org/10.1016/j.isprsjprs.2026.01.011). (Excluding newly added: Girth)
 
 > **Note:**
 >
 > This project is under long-term maintenance.
+> 
+> >***Attention: If you are using an earlier version, please be sure to manually download and replace `entrypoints/_updater.py` or clone the repository again to receive the latest version!***
 >
-> **A major version upgrade is expected to take place in the summer of 2026.**
+> **SmartQSM 2.0 will be released in the spring of 2026.**
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author and we will review it as soon as possible!
 
@@ -68,10 +70,10 @@ C. extract the downloaded zip file to the desired location.
 
 3. Change the working directory of the virtual environment to the project directory (including requirements.txt).
 
-4. Install the required dependencies in the virtual environment:
+4. Finish post-installation by running
 
 ```bash
-pip install -r requirements.txt
+python post_installation.py
 ```
 
 ### 1. Run SmartQSM
@@ -157,7 +159,7 @@ Visit https://github.com/isl-org/Open3D/issues/3317
 
 Visit https://github.com/isl-org/Open3D/issues/6840
 
-3. If automatic upgrades always fail, try replacing `entrypoints/_updater.py` with the latest version in the repo.
+3. If automatic upgrades always fail, ***especially when the version is below 1.6.0***, try replacing `entrypoints/_updater.py` with the latest version in the repo.
 
 ## Reference
 
@@ -169,17 +171,8 @@ Recommend that you indicate the version used (see `version.txt`) and the configu
 
 ## For developers
 
-If
-
-- you need to manually adjust parameters for specific data,  
-- or you plan to further develop based on this code,
-
-you can refer to the documentation at:  
-https://project-lightlingithubio.readthedocs.io/en/latest/smartqsm-reference.html
-
 For secondary development, please make sure you comply with the license.  
+
 You will need to always click “No” when prompted to upgrade, or directly modify the `check_update` function in `entrypoints/_updater.py` to disable automatic updates.
 
 You may also package your modified code for secondary development and send it via email to the author, along with a brief description, your name, and contact information. If your contribution proves useful, it may be included in future releases and acknowledged in the **Contributors** section.
-
-## Changelog

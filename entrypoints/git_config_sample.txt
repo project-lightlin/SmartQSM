@@ -1,0 +1,6 @@
+# Please make a copy and rename it as git_config.txt for it to work
+# Samples:
+# http.proxy="http://127.0.0.1:7890"
+# http.proxy="http://username:password@127.0.0.1:10811"
+# https.proxy=socks5://127.0.0.1:7890
+# http.sslVerify=false

@@ -209,4 +209,8 @@ __marimo__/
 # SmartQSM only
 *.log
 *.log.*
+*.run
 /entrypoints/qsm_viewer_config.yaml
+/entrypoints/git_config.txt
+changelog_viewer.py
+ls_useless_files.py
