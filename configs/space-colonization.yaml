@@ -5,18 +5,22 @@ kwargs_for_filter:
   std_ratio: 4.0
 using_density_adaptation_in_skeletonization: True
 skeletonization: 
-  category: thinning
-  core_algorithm: spconv_based_contraction
+  category: segmentation
+  core_algorithm: space_colonization
   core_algorithm_kwargs:
-    ckpt_path: ckpts/for_leafoff_seasons.pth
-    batch_size: 16
-    max_iteration: 10
-    device: cpu
-    voxel_size: 0.01
-    cube_size: 4.0
-    buffer_size: 0.4
-    monitored_by_chamfer_distance: True
-  voxel_size_for_downsampling: 0.01
+    max_patch_size: 0.04
+    neighborhood_size: 0.055
+    stride_multiple_for_influence_radius: 5.0
+    stride_multiple_for_kill_radius: 2.0
+    min_stride: 0.02
+    max_stride: ~
+    rough_height_diameter_ratio: 100
+    stride_function: "lambda x, lb, ub: lb + x * (ub - lb)"
+    max_angle: 90.0
+    max_num_branches: 2
+  radius_estimator: cylinder_fitting
+  radius_estimator_kwargs:
+    inlier_rate: 0.9
   edge_search_kwargs: 
     r: 0.055
   edge_weight_function: l1

@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional
-import open3d as o3d
-import numpy as np
+from typing import Dict
+from .core_algorithm_base import CoreAlgorithmBase
+from .spconv_based_contraction import SpconvBasedContraction
+from .layerwise_clustering import LayerwiseClustering
+from .space_colonization import SpaceColonization
 
-class Branch:
-    parent_id: Optional[int] = None
-    joint_point_idx: Optional[int] = None
-    order: Optional[int] = None
-    medial_points: Optional[np.ndarray] = None
-    active_medial_point_start_idx: int = 0
-    radii: Optional[np.ndarray] = None
-    arterial_snake: Optional[o3d.geometry.TriangleMesh] = None # Used to store simplified output, including the connection section
-    backup_arterial_snake: Optional[o3d.geometry.TriangleMesh] = None # Used for parameter extraction, removed the connection part and calculated as wood 
-    base_radius: Optional[float] = None
-    num_sectional_vertices: Optional[int] = None
+registry: Dict[str, Dict[str, CoreAlgorithmBase]] = {
+    "thinning": {
+        "spconv_based_contraction": SpconvBasedContraction
+    },
+    "segmentation": {
+        "layerwise_clustering": LayerwiseClustering,
+        "space_colonization": SpaceColonization
+    }
+}

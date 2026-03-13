@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict, Tuple, List, Any, Optional, Union
+from typing import Dict, Tuple, List, Any, Union
 from .data_type import Branch
 import numpy as np
 import open3d as o3d
@@ -32,9 +32,13 @@ def parameterize_and_export(
         output_path_prefix: str,
         global_shift: np.ndarray,
         projection: str = "",
-        params_for_parameter_extraction: Dict[str, Any] = {},
+        parameter_extraction_kwargs: Dict[str, Any] = {},
         creator: str = "SmartQSM",
+        **addtional_info_kwargs: Dict[str, Any]
 ) -> None:
+    if "hash" in addtional_info_kwargs or "target_ply" in addtional_info_kwargs:
+        raise ValueError("'hash' and 'target_ply' are reserved keywords.")
+    
     # Check order
     for branch_id, branch in branch_id_to_branch.items():
         if branch_id == 1:
@@ -79,10 +83,10 @@ def parameterize_and_export(
     branch_mesh_hash: str = get_md5_hash(branch_mesh_path)
     write_polyline(skeleton, skeleton_path)
 
-    branch_id_to_triangle_id_range: Dict[int, Tuple[int, int]] = {}
-    triangle_ids: List[int] = np.cumsum(list(branch_id_to_triangle_count.values())).tolist()
+    branch_id_to_triangle_idx_range: Dict[int, Tuple[int, int]] = {}
+    triangle_indices: List[int] = np.cumsum(list(branch_id_to_triangle_count.values())).tolist()
     for id, branch_id in enumerate(branch_id_to_branch.keys()):
-        branch_id_to_triangle_id_range[branch_id] = (triangle_ids[id - 1] if id > 0 else 0, triangle_ids[id] - 1)
+        branch_id_to_triangle_idx_range[branch_id] = (triangle_indices[id - 1] if id > 0 else 0, triangle_indices[id] - 1)
 
     # Compatible with TreeQSM
     qsm_cylinder_dict: Dict[str, Union[List[Any], np.ndarray]] = {
@@ -116,11 +120,11 @@ def parameterize_and_export(
         PositionInBranch: np.ndarray = np.arange(num_cylinders) + 1 # starts from 1 in TreeQSM
         BranchOrder: np.ndarray = np.full(num_cylinders, branch.order)
         added: np.ndarray = np.zeros(num_cylinders)
-        added[:branch.active_medial_point_start_id] = 1
+        added[:branch.active_medial_point_start_idx] = 1
         branch_: np.ndarray = np.full(num_cylinders, branch_id)
         parent: np.ndarray = added_cylinder_count + PositionInBranch - 1
         if branch.parent_id != -1:
-            parent[0] = branch_id_to_start_cylinder_id[branch.parent_id] +branch.joint_point_id
+            parent[0] = branch_id_to_start_cylinder_id[branch.parent_id] +branch.joint_point_idx
         else:
             parent[0] = 0
         extension: np.ndarray = added_cylinder_count + PositionInBranch + 1
@@ -143,7 +147,7 @@ def parameterize_and_export(
     qsm_cylinder_dict = {k: np.concatenate(v, axis=0) for k, v in qsm_cylinder_dict.items()}
     
     # Extract parameters
-    parameter_extraction: ParameterExtraction = ParameterExtraction(branch_id_to_branch, points, global_shift, **params_for_parameter_extraction)
+    parameter_extraction: ParameterExtraction = ParameterExtraction(branch_id_to_branch, points, global_shift, **parameter_extraction_kwargs)
     tree_data: Dict[int, Any] = {}
     for col_name, col_series in parameter_extraction.tree_dataframe.items():
         tree_data[col_name] = col_series.iloc[0]
@@ -158,9 +162,9 @@ def parameterize_and_export(
             branch_data[col_name][row["id"] - 1] = row[col_name]
     branch_data["start"] = np.full(shape=max_branch_id, fill_value=np.iinfo(np.uint64).max, dtype=np.uint64)
     branch_data["end"] = np.full(shape=max_branch_id, fill_value=np.iinfo(np.uint64).max, dtype=np.uint64)
-    for branch_id, triangle_id_range in branch_id_to_triangle_id_range.items():
-        branch_data["start"][branch_id - 1] = triangle_id_range[0]
-        branch_data["end"][branch_id - 1] = triangle_id_range[1]
+    for branch_id, triangle_idx_range in branch_id_to_triangle_idx_range.items():
+        branch_data["start"][branch_id - 1] = triangle_idx_range[0]
+        branch_data["end"][branch_id - 1] = triangle_idx_range[1]
     branch_data["id"][0] = 1 # Trunk
 
     if parameter_extraction.crown_convex_hull is not None:
@@ -191,11 +195,13 @@ def parameterize_and_export(
             "branch": branch_data,
             "treedata": tree_data,
             "rundata": {
-                "target_ply": os.path.basename(branch_mesh_path),
-                "hash": branch_mesh_hash, # Prevent any tampering
-                "projection": projection,
-                "creator": creator,
-                "qsmx_version": 1
+                **{
+                    "target_ply": os.path.basename(branch_mesh_path),
+                    "hash": branch_mesh_hash, # Prevent any tampering
+                    "projection": projection,
+                    "creator": creator
+                },
+                **addtional_info_kwargs
             }
         }
     }

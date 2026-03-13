@@ -37,7 +37,7 @@ def rdp_fast(points, epsilon):
     pts = np.asarray(points, dtype=float)
     n = pts.shape[0]
     if n <= 2:
-        return pts.copy(), list(range(n))
+        return pts.copy(), np.array(list(range(n)))
 
     keep = np.zeros(n, dtype=bool)
     keep[0] = True
@@ -57,6 +57,6 @@ def rdp_fast(points, epsilon):
             stack.append((start, max_index))
             stack.append((max_index, end))
 
-    keep_indices = np.nonzero(keep)[0].tolist()
+    keep_indices = np.nonzero(keep)[0]
     simplified = pts[keep]
     return simplified, keep_indices

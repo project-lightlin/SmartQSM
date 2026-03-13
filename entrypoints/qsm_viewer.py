@@ -36,7 +36,6 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class App:
     MENU_QUIT = 1
-    MENU_CHECK_UPDATE = 2
     MENU_CHANGE_LANGUAGE = 3
     MENU_ABOUT = 4
     MENU_OPEN_FILE = 11
@@ -104,10 +103,6 @@ class App:
                 app_menu.add_item(
                     self._translation.get("change_language", "Change language [Current English]"), 
                     App.MENU_CHANGE_LANGUAGE
-                )
-                app_menu.add_item(
-                    self._translation.get("check_update", "Check update"), 
-                    App.MENU_CHECK_UPDATE
                 )
                 app_menu.add_item(
                     self._translation.get("about", "About"), 
@@ -195,10 +190,6 @@ class App:
                 )
 
                 help_menu.add_item(
-                    self._translation.get("check_update", "Check update"), 
-                    App.MENU_CHECK_UPDATE
-                )
-                help_menu.add_item(
                     self._translation.get("about", "About"), 
                     App.MENU_ABOUT
                 )
@@ -217,7 +208,6 @@ class App:
         self.window.set_on_menu_item_activated(App.MENU_ZOOM_TO_FIT, self._on_menu_zoom_to_fit_activated)
         self.window.set_on_menu_item_activated(App.MENU_CHANGE_LANGUAGE, self._on_menu_change_language_activated)
         
-        self.window.set_on_menu_item_activated(App.MENU_CHECK_UPDATE, self._on_menu_check_update_activated)
         self.window.set_on_menu_item_activated(App.MENU_ABOUT, self._on_menu_about_activated)
 
 
@@ -521,8 +511,8 @@ class App:
                 t_hit = float(ans["t_hit"].numpy()[0])
                 if not np.isinf(t_hit):
                     self._dehighlight_and_hide_parameters()
-                    triangle_id = int(ans["primitive_ids"].numpy()[0])
-                    self._highlight_and_display_parameters(triangle_id)
+                    triangle_idx = int(ans["primitive_ids"].numpy()[0])
+                    self._highlight_and_display_parameters(triangle_idx)
                 
             self._pressed_mouse_button_to_repetitive.pop(event.buttons, None)
             return gui.Widget.EventCallbackResult.HANDLED
@@ -533,22 +523,22 @@ class App:
 
         return gui.Widget.EventCallbackResult.IGNORED
     
-    def _highlight_and_display_parameters(self, triangle_id):
+    def _highlight_and_display_parameters(self, triangle_idx):
         vertices = np.asarray(self._mesh.vertices)
         triangles = np.asarray(self._mesh.triangles)
         vertex_colors = np.asarray(self._mesh.vertex_colors)
 
-        record_idx = np.where((self._branch_dataframe["start"] <= triangle_id) & (self._branch_dataframe["end"] >= triangle_id))[0][0]
-        triangle_ids = np.arange(
+        record_idx = np.where((self._branch_dataframe["start"] <= triangle_idx) & (self._branch_dataframe["end"] >= triangle_idx))[0][0]
+        triangle_indices = np.arange(
             self._branch_dataframe.iloc[record_idx]["start"], 
             self._branch_dataframe.iloc[record_idx]["end"] + 1, 
-            dtype=type(triangle_id)
+            dtype=type(triangle_idx)
         )
         parent_branch_id = self._branch_dataframe.iloc[record_idx]["parent"]
         
         target_mesh = o3d.geometry.TriangleMesh()
         target_mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        target_mesh.triangles = o3d.utility.Vector3iVector(triangles[triangle_ids])
+        target_mesh.triangles = o3d.utility.Vector3iVector(triangles[triangle_indices])
         target_mesh.paint_uniform_color([0.25, 1., 1.])
 
         if record_idx == 0:
@@ -590,15 +580,15 @@ class App:
 
         if parent_branch_id != 0:
             try:
-                triangle_ids = np.arange(
+                triangle_indices = np.arange(
                     self._branch_dataframe.loc[self._branch_dataframe["id"] == parent_branch_id, "start"].item(), 
                     self._branch_dataframe.loc[self._branch_dataframe["id"] == parent_branch_id, "end"].item() + 1,
-                    dtype=type(triangle_id)
+                    dtype=type(triangle_idx)
                 )
                 parent_mesh = o3d.geometry.TriangleMesh()
                 parent_mesh.vertices = o3d.utility.Vector3dVector(vertices)
-                parent_mesh.triangles = o3d.utility.Vector3iVector(triangles[triangle_ids])
-                parent_mesh.paint_uniform_color(vertex_colors[triangles[triangle_ids[0]][0]])
+                parent_mesh.triangles = o3d.utility.Vector3iVector(triangles[triangle_indices])
+                parent_mesh.paint_uniform_color(vertex_colors[triangles[triangle_indices[0]][0]])
                 target_mesh += parent_mesh
             except Exception:
                 # Future support for broken branches
@@ -652,9 +642,6 @@ class App:
 
         dialog.add_child(dialog_layout)
         self.window.show_dialog(dialog)
-
-    def _on_menu_check_update_activated(self):
-        pass
 
     def _on_menu_about_activated(self):
         self.window.show_message_box("", self._translation.get("about_tree_viewer", "QSM Viewer is a part of the SmartQSM toolkit.\nFor details, please visit project-lightlin.github.io\nLicense: AGPL-3.0"))

@@ -5,18 +5,29 @@ kwargs_for_filter:
   std_ratio: 4.0
 using_density_adaptation_in_skeletonization: True
 skeletonization: 
-  category: thinning
-  core_algorithm: spconv_based_contraction
+  category: segmentation
+  core_algorithm: layerwise_clustering
   core_algorithm_kwargs:
-    ckpt_path: ckpts/for_leafoff_seasons.pth
-    batch_size: 16
-    max_iteration: 10
-    device: cpu
-    voxel_size: 0.01
-    cube_size: 4.0
-    buffer_size: 0.4
-    monitored_by_chamfer_distance: True
-  voxel_size_for_downsampling: 0.01
+    max_patch_size: 0.04
+    neighborhood_size: 0.055
+    min_layer_height: 0.02
+    max_layer_height: ~
+    rough_height_diameter_ratio: 100
+    stride_function: "lambda x, lb, ub: lb + x * (ub - lb)"
+    cross_layer_cluster_spacing: 0.04
+    flexible: False
+    cluster_algorithm: dbscan
+    cluster_algorithm_kwargs:
+      eps: 0.04
+      min_points: 5
+    min_cluster_size: 5
+  centroid_estimator: cpc
+  params_for_centroid_estimator:
+    bounded: True
+  radius_estimator: gmm
+  radius_estimator_kwargs:
+    auto: True
+    max_num_components: 2
   edge_search_kwargs: 
     r: 0.055
   edge_weight_function: l1

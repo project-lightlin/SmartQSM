@@ -17,13 +17,19 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from .core_algorithm_base import CoreAlgorithmBase
+from typing import Optional, Tuple, List, Any
 import numpy as np
-from typing import Optional, Tuple, List, Any, Dict
 import open3d as o3d
-from scipy.spatial import cKDTree
 import os
+import external.SmartTreeXX
+from external.SmartTreeXX.models.smart_tree_xx import SmartTreeXX
+from external.SmartTreeXX.datasets.synthetic_tree import SingleTreeDataset, collate_synthetic_tree
+import torch
 
-class SparseConvBasedContraction(CoreAlgorithmBase):
+class SpconvBasedContraction(CoreAlgorithmBase):
+    # input
+    _points: np.ndarray
+
     _epoch: int
     _contracted_points: Optional[np.ndarray]
     _displacements: Optional[np.ndarray]
@@ -37,7 +43,7 @@ class SparseConvBasedContraction(CoreAlgorithmBase):
     _chamfer_distance: Optional[float]
     _early_stopped: bool
 
-    def __init__(self, *, ckpt_path: str, batch_size: int, max_iteration: int, device: str = "cuda", voxel_size: float = 0.01, cube_size: float = 4.0, buffer_size: float = 0.4, verbose: bool = False, use_chamfer_distance: bool = False) -> None:
+    def __init__(self, *, ckpt_path: str, batch_size: int, max_iteration: int, device: str = "cuda", voxel_size: float = 0.01, cube_size: float = 4.0, buffer_size: float = 0.4, verbose: bool = False, monitored_by_chamfer_distance: bool = False) -> None:
         super().__init__(verbose=verbose)
         self._verbose = verbose
         self._max_iteration = max_iteration
@@ -48,10 +54,8 @@ class SparseConvBasedContraction(CoreAlgorithmBase):
         self._voxel_size = voxel_size
         self._device = device
         self._batch_size = batch_size
-        from .SmartTreeXX.models.smart_tree_xx import SmartTreeXX
-        import torch
         if not os.path.isabs(ckpt_path):
-            ckpt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "SmartTreeXX", ckpt_path))
+            ckpt_path = os.path.abspath(os.path.join(os.path.dirname(external.SmartTreeXX.__file__), ckpt_path))
         ckpt = torch.load(ckpt_path, map_location=self._device, weights_only=False)
         self._model = SmartTreeXX(
             **ckpt["hparams"]
@@ -59,21 +63,21 @@ class SparseConvBasedContraction(CoreAlgorithmBase):
         self._model.load_state_dict(ckpt["model_state_dict"])
         self._model.eval()
         
-        self._chamfer_distance = float("inf") if use_chamfer_distance else None
+        self._chamfer_distance = float("inf") if monitored_by_chamfer_distance else None
         self._early_stopped = False
         return
     
-    def _contract(self) -> Tuple[str, o3d.geometry.PointCloud]:
+    def _contract(self) -> Tuple[str, Optional[o3d.geometry.PointCloud]]:
         self._epoch += 1
         if self._early_stopped:
             if not self._verbose:
                 return
-            return (f"Skipped the {self._epoch}th contraction.", None)
+            return f"Skipped the {self._epoch}th contraction.", None
         if self._epoch == 1:
             self._contracted_points = np.copy(self._points).astype(np.float32)
             self._displacements = np.zeros_like(self._points).astype(np.float32)
         
-        from .SmartTreeXX.datasets.synthetic_tree import SingleTreeDataset, collate_synthetic_tree
+        
         import torch
         dataset: SingleTreeDataset = SingleTreeDataset(
             np.concatenate((self._contracted_points, self._displacements), axis=1),
@@ -117,7 +121,7 @@ class SparseConvBasedContraction(CoreAlgorithmBase):
                 if not self._verbose:
                     return
                 self._early_stopped = True
-                return f"Early stopped at the {self._epoch}th contraction."
+                return f"Early stopped at the {self._epoch}th contraction.", None
             self._chamfer_distance = chamfer_distance
 
         self._contracted_points = contracted_points
@@ -138,8 +142,4 @@ class SparseConvBasedContraction(CoreAlgorithmBase):
         ] * self._max_iteration
     
     def output(self):
-        return self._contracted_points, self._displacements
-
-registry: Dict[str, CoreAlgorithmBase] = {
-    "sparse_conv_based_contraction": SparseConvBasedContraction
-}
+        return {"contracted_points": self._contracted_points, "displacements": self._displacements}

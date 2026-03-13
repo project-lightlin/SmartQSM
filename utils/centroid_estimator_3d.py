@@ -10,7 +10,7 @@ from scipy.stats import norm
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="statsmodels")
 
-def _l1_median_cost_fn(points: np.ndarray, center: np.ndarray) -> float:
+def _l1_median_cost_fn(center: np.ndarray, points: np.ndarray) -> float:
     d: np.ndarray = np.linalg.norm(center - points, axis=1)
     return d.sum()
 
@@ -94,7 +94,7 @@ class _CPCOptimization:
         self._sigma_fn = sigma_fn
         return
     
-    def cost_fn(self, X: np.ndarray, v: np.ndarray) -> float:
+    def cost_fn(self, v: np.ndarray, X: np.ndarray) -> float:
         d: np.ndarray = np.linalg.norm(v - X, axis=1)  
         mu: float = self._mu_fn(d)
         m: int = d.shape[0]
@@ -116,7 +116,6 @@ class CentroidEstimator3D:
         self._points = points
         self._name_to_fn = {
             "mass_center": lambda **kwargs: self.mass_center,
-            #"centroid": lambda **kwargs: self.centroid,
             "l1_median": lambda **kwargs: self.l1_median(**kwargs),
             "trimmed_lad": lambda **kwargs: self.trimmed_lad(**kwargs),
             "ransac": lambda **kwargs: self.ransac(**kwargs),
@@ -138,9 +137,9 @@ class CentroidEstimator3D:
         cpc_optimization: _CPCOptimization = _CPCOptimization(np.mean, np.std)
         return wrapped_minimize(
             cpc_optimization.cost_fn, 
-            self._points,
-            self._check_and_return_init_center(init_center_type), 
-            compute_aabb_bounds(self._points) if bounded else None, 
+            x0=self._check_and_return_init_center(init_center_type), 
+            args=(self._points,),
+            bounds=compute_aabb_bounds(self._points) if bounded else None, 
             **kwargs
         )
     
@@ -148,9 +147,9 @@ class CentroidEstimator3D:
         if use_weiszfeld:
             return wrapped_minimize(
                 _l1_median_cost_fn, 
-                self._points,
-                self._check_and_return_init_center(init_center_type),
-                compute_aabb_bounds(self._points) if bounded else None, 
+                x0=self._check_and_return_init_center(init_center_type), 
+                args=(self._points,),
+                bounds=compute_aabb_bounds(self._points) if bounded else None, 
                 **kwargs
             )
         else:
@@ -169,9 +168,9 @@ class CentroidEstimator3D:
             return np.sum(np.sort(d)[:num_inliers])
         return wrapped_minimize(
             lts_loss, 
-            self._points,
-            self._check_and_return_init_center(init_center_type), 
-            compute_aabb_bounds(self._points) if bounded else None, 
+            x0=self._check_and_return_init_center(init_center_type), 
+            args=(self._points,),
+            bounds=compute_aabb_bounds(self._points) if bounded else None, 
             **kwargs
         )
 
@@ -194,8 +193,8 @@ class CentroidEstimator3D:
         best_loss: float = np.inf
 
         for _ in range(num_iterations):
-            sample_point_ids: np.ndarray = np.random.choice(num_samples, num_inliers, replace=False)
-            sample_points: np.ndarray = self._points[sample_point_ids]
+            sample_point_indices: np.ndarray = np.random.choice(num_samples, num_inliers, replace=False)
+            sample_points: np.ndarray = self._points[sample_point_indices]
             estimated_center: np.ndarray 
             if use_weiszfeld:
                 estimated_center = _wrapped_weiszfeld(
@@ -207,16 +206,16 @@ class CentroidEstimator3D:
             else:
                 estimated_center = wrapped_minimize(
                     _l1_median_cost_fn,
-                    sample_points,
-                    init_center,
-                    bounds,
+                    x0=init_center,
+                    args=(sample_points,),
+                    bounds=bounds,
                     **kwargs
                 )
             errors: np.ndarray = np.linalg.norm(estimated_center - self._points, axis=1)
             
             if refitted:
-                inlier_point_ids: np.ndarray = np.argsort(errors)[:num_inliers]
-                inlier_points: np.ndarray = self._points[inlier_point_ids]
+                inlier_point_indices: np.ndarray = np.argsort(errors)[:num_inliers]
+                inlier_points: np.ndarray = self._points[inlier_point_indices]
                 if use_weiszfeld:
                     estimated_center = _wrapped_weiszfeld(
                         inlier_points,
@@ -227,9 +226,9 @@ class CentroidEstimator3D:
                 else:
                     estimated_center = wrapped_minimize(
                         _l1_median_cost_fn,
-                        inlier_points,
-                        estimated_center,
-                        bounds,
+                        x0=estimated_center,
+                        args=(inlier_points,),
+                        bounds=bounds,
                         **kwargs
                     )
                 errors: np.ndarray = np.linalg.norm(estimated_center - self._points, axis=1)

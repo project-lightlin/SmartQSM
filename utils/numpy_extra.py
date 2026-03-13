@@ -7,18 +7,6 @@ def normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     v_norm = np.maximum(v_norm, eps)
     return v / v_norm
 
-def calculate_three_point_curvature(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
-    # k = 4S(Triangle ABC)/(abc) = 2 * |(p2-p1) × (p3-p2)| / (|p2-p1| * |p3-p2| * |p3-p1|)
-    a = np.linalg.norm(p2 - p1)
-    b = np.linalg.norm(p3 - p2)
-    c = np.linalg.norm(p3 - p1)
-    cross = np.linalg.norm(np.cross(p2-p1, p3-p2))
-    abc = a * b * c
-    if abc == 0:
-        return 0 
-    curvature = 2 * cross / abc
-    return curvature
-
 def calculate_three_point_curvatures(P1s: np.ndarray, P2s: np.ndarray, P3s: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     v21 = P2s - P1s              # (..., 3)
     v32 = P3s - P2s              # (..., 3)
@@ -37,8 +25,10 @@ def calculate_three_point_curvatures(P1s: np.ndarray, P2s: np.ndarray, P3s: np.n
 def calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
     dot_product = np.dot(v1, v2)
     norm_product = np.linalg.norm(v1) * np.linalg.norm(v2)
+    if norm_product == 0:
+        return np.nan
     cos_angle = dot_product / norm_product
-    angle = np.degrees(np.arccos(cos_angle))
+    angle = np.rad2deg(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
     return angle
 
 def calculate_distances_from_points_to_line(Ps: np.ndarray, M: np.ndarray, N: np.ndarray) -> np.ndarray:
@@ -64,7 +54,7 @@ def calculate_distances_from_points_to_line(Ps: np.ndarray, M: np.ndarray, N: np
     
     return distances
 
-def calculate_distances_between_points_and_surface(Ps: np.ndarray, A: np.ndarray, B: np.ndarray, C: np.ndarray) -> float:
+def calculate_distances_from_points_to_surface(Ps: np.ndarray, A: np.ndarray, B: np.ndarray, C: np.ndarray) -> float:
     AB = B - A
     AC = C - A
     n = np.cross(AB, AC)
@@ -90,13 +80,15 @@ def find_a_vertical_direction_3d(direction: np.ndarray) -> np.ndarray:
         vertical_direction = np.array([-y, x, 0.])
     return vertical_direction / np.linalg.norm(vertical_direction)
 
-def get_projection_vector(plane_normal_vector: np.ndarray, vector_from_a_plane_point: np.ndarray) -> np.ndarray:
-    if len(plane_normal_vector) != 3:
-        raise ValueError("plane_coefficients must be [A, B, C] in equation Ax+By+Cz+D=0.")
+def project_onto_plane(n: np.ndarray, v: np.ndarray) -> np.ndarray:
+    if len(v) != 3:
+        raise ValueError("vector must be [x, y, z] in equation Ax+By+Cz+D=0.")
     
-    n : np.ndarray = plane_normal_vector
-    v : np.ndarray = vector_from_a_plane_point
-    return v - np.dot(n, v) / (np.linalg.norm(n) ** 2) * n
+    n_norm2 = np.dot(n, n)
+    if n_norm2 == 0:
+        raise ValueError("Plane normal vector must be non-zero.")
+
+    return v - np.dot(n, v) / n_norm2 * n
 
 def sample_line_segment(p1, p2, max_step=0.001):
 
@@ -112,26 +104,48 @@ def sample_line_segment(p1, p2, max_step=0.001):
     points = p1 + np.outer(t_values,  p2 - p1)
     return points
 
-def point_to_segment_distances_3d(point: np.ndarray, segment_starts: np.ndarray, segment_ends: np.ndarray, eps: float = 1e-12) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    K = np.asarray(point, dtype=float).reshape(1, 3)
-    M = np.asarray(segment_starts, dtype=float)
-    Np = np.asarray(segment_ends, dtype=float)
-    v = Np - M                     
-    w = K - M                      
-    vv = np.einsum('ij,ij->i', v, v)         
-    vw = np.einsum('ij,ij->i', v, w)        
-    mask_deg = vv < eps
-    # t = clamp(vw / vv, 0, 1)
-    t = np.zeros_like(vw)
-    t[~mask_deg] = vw[~mask_deg] / vv[~mask_deg]
+def calculate_distances_from_points_to_segments_3d(
+    points: np.ndarray,
+    segment_starts: np.ndarray,
+    segment_ends: np.ndarray,
+    eps: float = 1e-12
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    points = np.asarray(points, dtype=float).reshape(-1, 3)          # (M,3)
+    M = np.asarray(segment_starts, dtype=float).reshape(-1, 3)       # (N,3)
+    Np = np.asarray(segment_ends, dtype=float).reshape(-1, 3)        # (N,3)
+
+    K = points[:, None, :]   # (M,1,3)
+    M_exp = M[None, :, :]    # (1,N,3)
+    Np_exp = Np[None, :, :]  # (1,N,3)
+
+    v = Np_exp - M_exp       # (1,N,3)
+    w = K - M_exp            # (M,N,3)
+
+    vv = np.einsum('ij,ij->i', M, Np - M) 
+
+    vw = np.einsum('ijk,ijk->ij', w, v)    # (M,N,3)->(M,N)
+
+    mask_deg = vv < eps                    # (N,)
+
+    t = np.zeros_like(vw)                  # (M,N)
+    vv_safe = vv.copy()
+    vv_safe[mask_deg] = 1.0                # 避免除零
+    t = vw / vv_safe[None, :]             # (M,N)
     t = np.clip(t, 0.0, 1.0)
-    P = M + t[:, None] * v         # (N,3)
-    P[mask_deg] = M[mask_deg]
-    d = np.linalg.norm(P - K, axis=1)
+
+    P = M_exp + t[..., None] * v          # (M,N,3)
+
+    if np.any(mask_deg):
+        P[:, mask_deg, :] = M_exp[:, mask_deg, :]
+
+    d = np.linalg.norm(P - K, axis=2)     # (M,N)
     return d, P, t
 
 def calculate_heading_angle(heading_direction: np.ndarray, reference_direction: np.ndarray = np.array([0., 1.]), clockwise=True) -> float: # The convention for navigation is clockwise
-    assert heading_direction.shape == reference_direction.shape, "heading_direction and reference_direction must have the same shape."
+    assert heading_direction.shape == reference_direction.shape \
+        and heading_direction.ndim == 1 \
+        and heading_direction.size == 2, "heading_direction and reference_direction must have the same shape. Both directions must be 1D vectors of length 2, like np.array([0, 1])"
+    
     if np.linalg.norm(heading_direction) == 0.:
         return 0.
     if np.linalg.norm(reference_direction) == 0.:
@@ -168,3 +182,33 @@ def calculate_direction_of_ordered_points(points: np.array) -> np.array:
         return principal_component
     else:
         return -principal_component
+    
+def calculate_symmetric_points(
+    points: np.ndarray, 
+    line_start: np.ndarray, 
+    line_end: np.ndarray
+) -> np.ndarray:
+    points = np.asarray(points, dtype=np.float64)
+    line_start = np.asarray(line_start, dtype=np.float64).reshape(3)
+    line_end = np.asarray(line_end, dtype=np.float64).reshape(3)
+    
+    if points.ndim != 2 or points.shape[1] != 3:
+        raise ValueError(f"points must be a (N, 3) array, but got {points.shape}")
+    
+    # 计算直线的方向向量
+    v = line_end - line_start
+    v_norm_sq = np.dot(v, v)
+    
+    if v_norm_sq < 1e-12:
+        raise ValueError("line_start and line_end must be different points.")
+    
+    # 向量化计算
+    AP = points - line_start
+    
+    t = np.dot(AP, v) / v_norm_sq
+    
+    Q = line_start + t[:, np.newaxis] * v
+    
+    symmetric_points = 2 * Q - points
+    
+    return symmetric_points

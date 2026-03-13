@@ -43,6 +43,17 @@ def run_post_install(root_dir: str):
         "configs/spconv-contraction-SOME-LEAVES-cuda.yaml",
         "configs/spconv-contraction-MANY-LEAVES-cpu.yaml",
         "configs/spconv-contraction-MANY-LEAVES-cuda.yaml"
+        "configs/layerwise-clustering-LEAFOFF.yaml",
+        "configs/layerwise-clustering-LEAFON.yaml"
+        "core/core_algorithm_base.py",
+        "core/segmentation_algorithms.py",
+        "core/segmentation_based_skeletonization.py",
+        "core/skeletonization_base.py",
+        "core/thinning_algorithms.py",
+        "core/thinning_based_skeletonization.py",
+        "utils/evaluate_skeleton.py",
+        "utils/loss_fn.py",
+        "utils/xlsx_io.py"
     ]
     for useless_file_path in useless_file_paths:
         try:
@@ -52,6 +63,7 @@ def run_post_install(root_dir: str):
 
     
     useless_directories = [
+        "core/SmartTreeXX/",
     ]
     
     for useless_dir in useless_directories:

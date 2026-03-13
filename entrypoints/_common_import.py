@@ -23,7 +23,6 @@ import locale
 import open3d.visualization.gui as gui
 import tkinter
 import numpy as np
-from scipy.spatial.transform import Rotation
 from _updater import check_update
 
 ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")

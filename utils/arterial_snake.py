@@ -1,19 +1,8 @@
 import numpy as np
 import open3d as o3d
 from typing import List
-from .numpy_extra import find_a_vertical_direction_3d, get_projection_vector
+from .numpy_extra import find_a_vertical_direction_3d, project_onto_plane, normalize
 from scipy.spatial.transform import Rotation
-
-def _safe_normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
-    n = np.linalg.norm(v, axis=-1, keepdims=True)
-    n = np.maximum(n, eps)
-    return v / n
-
-def _project_and_normalize(v: np.ndarray, onto_perp_to: np.ndarray) -> np.ndarray:
-    u = onto_perp_to
-    v_proj = v - np.dot(v, u) * u
-    n = np.linalg.norm(v_proj)
-    return v_proj / n
 
 # Vectorized Implementation by GPT-5
 def generate_arterial_snake(
@@ -38,14 +27,14 @@ def generate_arterial_snake(
     start[-1]  = points[-2]
     end[-1]    = points[-1]
     directions = end - start
-    directions = _safe_normalize(directions)  # (N, 3)
+    directions = normalize(directions)  # (N, 3)
 
     principal_normals = np.zeros_like(directions)
     principal_normals[0] = find_a_vertical_direction_3d(directions[0])
 
     for i in range(1, N - 0):  
         if i < N - 1:
-            principal_normals[i] = _project_and_normalize(principal_normals[i - 1], directions[i])
+            principal_normals[i] = normalize(project_onto_plane(directions[i], principal_normals[i - 1]))
         else:
             principal_normals[i] = principal_normals[i - 1]
 

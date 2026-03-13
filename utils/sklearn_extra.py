@@ -30,7 +30,7 @@ def determine_optimal_components(
     
     max_num_components = min(max_num_components, len(X))
     if use_cv_score:
-        max_num_components = min(max_num_components, int(np.floor(len(X) * (cv-1) / cv).astype(int)))
+        max_num_components = min(max_num_components, np.floor(len(X) * (cv-1) / cv).astype(int))
     
     data: List[List[Any]] = []
     
@@ -68,13 +68,17 @@ def calculate_best_gaussian_mixture(
         X: np.ndarray,
         auto: bool = False,
         max_num_components: int = 1,
+        expected_num_samples_per_component: int = 10,
         **kwargs
 ) -> Union[GaussianMixture, BayesianGaussianMixture]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning) 
         if auto:
             bgmm: BayesianGaussianMixture = BayesianGaussianMixture(
-                n_components=min(max_num_components, len(X)),         
+                n_components=min(
+                    max_num_components, 
+                    np.ceil(len(X) / expected_num_samples_per_component).astype(int)
+                ),         
                 **kwargs
             )
             bgmm.fit(X)
@@ -82,7 +86,10 @@ def calculate_best_gaussian_mixture(
         else:
             data_frame: pd.DataFrame = determine_optimal_components(
                 X,
-                max_num_components=max_num_components,
+                max_num_components=min(
+                    max_num_components, 
+                    np.ceil(len(X) / expected_num_samples_per_component).astype(int)
+                ),
                 use_cv_score=False,
                 use_bic=True,
                 use_aic=False,

@@ -23,9 +23,9 @@ from joblib import delayed
 import os
 from utils.parallel import parallelize
 from utils.centroid_estimator_3d import CentroidEstimator3D
-from .skeletonization_base import SkeletonizationBase
+from .skeletonization_pipeline_base import SkeletonizationPipelineBase
 from utils.open3d_extra import calculate_min_spacing_between
-from .segmentation_algorithms import CoreAlgorithmBase, registry
+from .core_algorithms import *
 from utils.cylinder_fitting import fit_cylinder
 from utils.sklearn_extra import calculate_best_gaussian_mixture
 from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
@@ -49,7 +49,7 @@ class _CentroidEstimator:
         radius: Optional[float]
         try:
             centroid, radius = self._centroid_estimator(points)
-        except (RuntimeError, ValueError):
+        except Exception:
             centroid = np.mean(points, axis=0)
             radius = None
         return centroid, radius
@@ -91,26 +91,34 @@ class _RadiusEstimator:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 radius = self._radius_estimator(points, centroid)
-        except AttributeError:
+        except Exception:
             radius = 0.
         return radius
 
-class SegmentationBasedSkeletonization(SkeletonizationBase):
+class SegmentationBasedSkeletonizationPipeline(SkeletonizationPipelineBase):
     _core_algorithm: Optional[CoreAlgorithmBase]
     _edge_weight_function: Optional[str]
     _skeleton_extractor: Optional[str]
     _centroid_estimator: Optional[_CentroidEstimator]
     _radius_estimator: Optional[_RadiusEstimator]
-    _temp_radii: Optional[List[float]]
+    _radii: Optional[List[Optional[float]]]
 
     def _clear(self) -> None:
         super()._clear()
         
+        self._edge_weight_function_to_fn.update(
+            {
+                "min_spacing": lambda point_i_and_cluster_i, point_j_and_cluster_j: calculate_min_spacing_between(
+                    self._points[point_i_and_cluster_i[1]], 
+                    self._points[point_j_and_cluster_j[1]]
+                )
+            }
+        )
+
         self._edge_weight_function = None
         self._centroid_estimator = None
         self._radius_estimator = None
         self._core_algorithm = None
-        self._temp_radii = None
         return
     
     def __init__(
@@ -121,39 +129,29 @@ class SegmentationBasedSkeletonization(SkeletonizationBase):
         super().__init__(
             verbose=verbose
         )
-
-        self._add_edge_weight_function(
-            "min_spacing", 
-            lambda u_data, v_data: calculate_min_spacing_between(self._points[u_data[1]], self._points[v_data[1]])
-        )
         return
     
     def set_params(
             self, 
             *,
             core_algorithm: str,
-            params_for_core_algorithm: Dict[str, Any] = {},
+            core_algorithm_kwargs: Dict[str, Any] = {},
             centroid_estimator: str = "mass_center", 
             params_for_centroid_estimator: Dict[str, Any] = {}, 
             radius_estimator: str = "gmm",
-            params_for_radius_estimator: Dict[str, Any] = {}, 
-            edge_search_param: float = 0.,
-            edge_weight_function: str = "squared_l2_norm",
-            topology_extractor: str = "spt",
+            radius_estimator_kwargs: Dict[str, Any] = {}, 
+            **kwargs
     ) -> None:
-        self._core_algorithm = registry[core_algorithm](
+        self._core_algorithm = registry["segmentation"][core_algorithm](
             verbose=self._verbose,
-            **params_for_core_algorithm
+            **core_algorithm_kwargs
         )
 
-        self._edge_weight_function = edge_weight_function
         self._centroid_estimator = _CentroidEstimator(solver=centroid_estimator, **params_for_centroid_estimator)
-        self._radius_estimator = _RadiusEstimator(solver=radius_estimator, **params_for_radius_estimator)
+        self._radius_estimator = _RadiusEstimator(solver=radius_estimator, **radius_estimator_kwargs)
         
         super().set_params(
-            edge_search_param=edge_search_param,
-            edge_weight_function=edge_weight_function, 
-            topology_extractor=topology_extractor
+            **kwargs
         )
 
         self._add_fns_to_pipeline(0, self._core_algorithm.get_pipeline() + [
@@ -169,9 +167,16 @@ class SegmentationBasedSkeletonization(SkeletonizationBase):
         skeletal_points: List[np.ndarray]
         radii: List[float]
 
-        self._clusters, self._edges = self._core_algorithm.output()
+        outputs: Dict[str, Any] = self._core_algorithm.output()
+        self._skeletal_points = outputs.get("skeletal_points", None)
+        self._clusters = outputs.get("clusters", None)
+        self._edges = outputs.get("edges", [])
+        self._radii = [None] * len(self._clusters) # 
+
+        if self._skeletal_points is not None:
+            return
         
-        result: Any = parallelize(
+        skeletal_points_with_radius: List[Any] = parallelize(
             (
                 delayed(
                     self._centroid_estimator.estimate
@@ -180,11 +185,10 @@ class SegmentationBasedSkeletonization(SkeletonizationBase):
             ),
             np.ceil(len(self._clusters) / os.cpu_count()).astype(int)
         )
-        skeletal_points, radii = zip(*result)
+        skeletal_points, radii = zip(*skeletal_points_with_radius)
         
         self._skeletal_points = np.array(skeletal_points)
-        self._temp_radii = radii
-
+        self._radii = radii
         if not self._verbose:
             return
         
@@ -195,23 +199,22 @@ class SegmentationBasedSkeletonization(SkeletonizationBase):
         return f"Produced {len(self._skeletal_points)} skeletal points.", cloud
 
     def _produce_init_radii(self) -> Optional[Tuple[str, o3d.geometry.TriangleMesh]]:
-        result: Any = parallelize(
+        radii: List[Any] = parallelize(
             (
                 delayed(
                     self._radius_estimator.estimate
-                )(self._points[cluster], self._skeletal_points[i], self._temp_radii[i]) 
+                )(self._points[cluster], self._skeletal_points[i], self._radii[i]) 
                 for i, cluster in enumerate(self._clusters)
             ),
             np.ceil(len(self._clusters) / os.cpu_count()).astype(int)
         )
-        self._radii = np.array(result)
-        
+        self._radii = np.array(radii)
         if not self._verbose:
             return
         
         mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh()
-        for point_id, point in enumerate(self._skeletal_points):
-            radius: float = self._radii[point_id]
+        for point_idx, point in enumerate(self._skeletal_points):
+            radius: float = self._radii[point_idx]
             if radius <= 0.:
                 continue
             sphere_mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=radius, resolution=6)
@@ -221,9 +224,6 @@ class SegmentationBasedSkeletonization(SkeletonizationBase):
         return f"Estimated the initial radii (max={np.max(self._radii):.4f}).", mesh
 
 
-    def _convert_edge_search_param(self):
-        return super()._convert_edge_search_param()
-
     def run(self, points: np.ndarray):
-        self._core_algorithm.set_points(points)
+        self._core_algorithm.input(points=points)
         return super().run(points=points)

@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict, Callable, Any, List
-import numpy as np
+from typing import Callable, Any, List, Dict
 
 class CoreAlgorithmBase:
-    _points: np.ndarray
     _verbose: bool
     
     def __init__(self, *, verbose: bool = False, **kwargs) -> None:
@@ -30,9 +28,10 @@ class CoreAlgorithmBase:
     def get_pipeline(self) -> List[Callable[[], Any]]:
         pass
 
-    def set_points(self, points: np.ndarray) -> None:
-        self._points = points
+    def input(self, **kwargs) -> None:
+        for k, v in kwargs.items():
+            setattr(self, f"_{k}", v) # Initialize a new object attribute
         return
 
-    def output(self) -> Any:
+    def output(self) -> Dict[str, Any]:
         pass

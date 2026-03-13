@@ -16,24 +16,23 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from .pipeline import Pipeline
 from typing import Any, Generator
-from .segmentation_based_skeletonization import SegmentationBasedSkeletonization
-from .thinning_based_skeletonization import ThinningBasedSkeletonization
-from .skeletonization_base import SkeletonizationBase
+from .segmentation_based_skeletonization_pipeline import SegmentationBasedSkeletonizationPipeline
+from .thinning_based_skeletonization_pipeline import ThinningBasedSkeletonizationPipeline
+from .skeletonization_pipeline_base import SkeletonizationPipelineBase
 
 class Skeletonization:
-    _skeletonizer: SkeletonizationBase
+    _skeletonizer: SkeletonizationPipelineBase
 
     def __init__(self, verbose: bool = False) -> None:
         self._verbose = verbose
         return
     
-    def set_params(self, category: str = "thinning", **kwargs) -> None:
+    def set_params(self, category: str = "hybrid", **kwargs) -> None:
         if category == "segmentation":
-            self._skeletonizer = SegmentationBasedSkeletonization(verbose=self._verbose)
+            self._skeletonizer = SegmentationBasedSkeletonizationPipeline(verbose=self._verbose)
         elif category == "thinning":
-            self._skeletonizer = ThinningBasedSkeletonization(verbose=self._verbose)
+            self._skeletonizer = ThinningBasedSkeletonizationPipeline(verbose=self._verbose)
         else:
             raise ValueError(f"Unknown category: {category}")
         self._skeletonizer.set_params(**kwargs)

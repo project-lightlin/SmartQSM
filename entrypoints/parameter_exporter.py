@@ -187,6 +187,7 @@ class App:
                     raise ValueError(f"Length of field {field} ({len(values)}) is different from length of other fields ({length})")
                 branch_parameter_to_values[field] = values
             self._name_to_branch_dataframe[name] = pd.DataFrame(branch_parameter_to_values)
+           
             
             opened_paths.append(path)
 

@@ -6,7 +6,7 @@ import ezdxf
 from typing import Tuple
 import pypcd4
 
-def pcd_to_o3d(path: str) -> o3d.geometry.PointCloud:
+def _pcd_to_o3d(path: str) -> o3d.geometry.PointCloud:
     pc = pypcd4.PointCloud.from_path(path)
     data = pc.pc_data
     def _get_first_existing_field(names):
@@ -93,7 +93,7 @@ def read_point_cloud(cloud_path: str) -> Tuple[o3d.geometry.PointCloud, str]:
     if suffix in (".ply"):
         cloud = o3d.io.read_point_cloud(cloud_path)
     elif suffix in (".pcd"):
-        cloud = pcd_to_o3d(cloud_path)
+        cloud = _pcd_to_o3d(cloud_path)
     elif suffix in (".las", ".laz"):
         las: laspy.LasData = laspy.read(cloud_path)
         try:

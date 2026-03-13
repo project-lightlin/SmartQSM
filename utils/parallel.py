@@ -1,6 +1,6 @@
-from typing import Any, Optional
+from typing import Any, Optional, List
 import os
-from joblib import Parallel
+from joblib import Parallel, delayed
 import warnings
 try:
     import joblib.externals.loky.reusable_executor as reusable_executor
@@ -11,7 +11,7 @@ def parallelize(
         iterable: Any,
         chunk_size: int,
         n_jobs: Optional[int] = None
-) -> Any:
+) -> List[Any]:
     
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning, module="joblib") 

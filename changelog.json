@@ -1,5 +1,116 @@
 {
     "releases": [
+        
+        {
+            "version": "2.0.0",
+            "codename": "Ginkgo",
+            "released": "2026/03/21",
+            "changelog": [
+                {
+                    "title": "<i>Density adaptation</i> has been officially enabled to support the processing of sparse (airborne) individual tree point clouds.",
+                    "released": "2026/02/26",
+                    "label": "Added",
+                    "module": "entrypoints.smartqsm",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "Add the top-level key value pair 'using_density_adaptation_in_skeletonization: True' to the configuration file to enable."
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Core skeletonization algorithms are managed modularly now.",
+                    "released": "2026/02/18",
+                    "label": "Changed",
+                    "module": "core.core_algorithms",
+                    "language": "en",
+                    "author": "by YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "Place the algorithm code inherited from CoreAlgorithmBase under folder core/core_algorithms, register it in core/_registry.py, and finally write the corresponding configuration file."
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "New skeletonization algorithms <i>Flexible layerwise clustering & Space colonization </i> are now available.",
+                    "released": "2026/03/10",
+                    "label": "Added",
+                    "module": "{core.core_algorithms.layerwise_clustering, core.core_algorithms.space_colonization}",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "ISpline replaces the allometric equation as the official method for fitting trunk/branch curves. Now, the determination of branch order is determined by the estimated thickness.",
+                    "released": "2026/03/01",
+                    "label": "Changed",
+                    "module": "{configs, core.refinement}",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "In the official new version of the configuration file, the default value for using_allometric_equation is False. If the allometric equation needs to be used, it must be enabled. Also, the maximum depth can no longer be used as an independent variable in the allometric equation."
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "The detail of branching structure can be depicted more smoothly now.",
+                    "released": "2026/02/26",
+                    "label": "Changed",
+                    "module": "core.modeling",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "<ul><li>Modified the method of selecting branch connection points; </li><li>Corrected the parameters for Hermite curve interpolation; </li><li>The RDP algorithm no longer applies to Hermite interpolation points.</li></ul>"
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "The core structure has undergone significant adjustments.",
+                    "released": "2026/02/26",
+                    "label": "Changed",
+                    "module": "core",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                        {
+                            "media_type": "text/html",
+                            "body": "Secondary development based on old versions may require re-adaptation."
+                        }
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Bug fixes, renaming, and performance optimizations.",
+                    "released": "2026/03/10",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
         {
             "version": "1.6.0",
             "codename": "",

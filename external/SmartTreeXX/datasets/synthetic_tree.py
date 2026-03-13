@@ -128,8 +128,8 @@ class SyntheticTreeDataset(Dataset):
         points = points.to(self._device)
         displacements = displacements.to(self._device)
         
-        random_point_id: int = torch.randint(0, points.shape[0], (1,)).item()
-        cube_center: torch.Tensor = points[random_point_id]
+        random_point_idx: int = torch.randint(0, points.shape[0], (1,)).item()
+        cube_center: torch.Tensor = points[random_point_idx]
 
         min_diagonal: torch.Tensor = cube_center - self._cube_size / 2
         max_diagonal: torch.Tensor = cube_center + self._cube_size / 2
@@ -144,9 +144,9 @@ class SyntheticTreeDataset(Dataset):
         min_diagonal = min_diagonal.squeeze()
         max_diagonal = max_diagonal.squeeze()
 
-        point_ids: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
+        point_indices: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
 
-        features: torch.Tensor = torch.cat([points, point_ids], dim=1)
+        features: torch.Tensor = torch.cat([points, point_indices], dim=1)
         voxel_indices: torch.Tensor
         features, voxel_indices, _, _ = PointToVoxel(
             vsize_xyz=[self._voxel_size] * 3,
@@ -162,8 +162,8 @@ class SyntheticTreeDataset(Dataset):
 
         features = features.squeeze(1)
         points = features[: ,:3]
-        point_ids = features[:, 3].int()
-        displacements = displacements[point_ids]
+        point_indices = features[:, 3].int()
+        displacements = displacements[point_indices]
 
         batch_ids: torch.Tensor =  torch.zeros(
             (voxel_indices.shape[0], 1),
@@ -301,9 +301,9 @@ class SingleTreeDataset(Dataset):
         displacements = displacements.to(self._device)
         mask = mask.to(self._device)
 
-        point_ids: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
-        features: torch.Tensor = torch.cat([points, point_ids], dim=1)
-         
+        point_indices: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
+        features: torch.Tensor = torch.cat([points, point_indices], dim=1)
+
         voxel_indices: torch.Tensor
         features, voxel_indices, _, _ = PointToVoxel(
             vsize_xyz=[self._voxel_size] * 3,
@@ -319,9 +319,9 @@ class SingleTreeDataset(Dataset):
         
         features = features.squeeze(1)
         points = features[:, :3]
-        point_ids = features[:, 3].int()
-        displacements = displacements[point_ids]
-        mask = mask[point_ids]
+        point_indices = features[:, 3].int()
+        displacements = displacements[point_indices]
+        mask = mask[point_indices]
 
         batch_ids: torch.Tensor =  torch.zeros(
             (voxel_indices.shape[0], 1),

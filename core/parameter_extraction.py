@@ -594,8 +594,8 @@ class ParameterExtraction:
             self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "height_difference_m"] = height_difference
 
             parent_branch: Branch = self._branch_id_to_branch[branch.parent_id]
-            joint_point: np.ndarray = parent_branch.medial_points[branch.joint_point_id]
-            parent_branch_samples: np.ndarray = _sample_polyline(parent_branch.medial_points[branch.joint_point_id:], self._measurement_radius, self._sampling_size)
+            joint_point: np.ndarray = parent_branch.medial_points[branch.joint_point_idx]
+            parent_branch_samples: np.ndarray = _sample_polyline(parent_branch.medial_points[branch.joint_point_idx:], self._measurement_radius, self._sampling_size)
             parent_local_branch_direction: np.ndarray = np.array([0., 0., 0.])
             if parent_branch_samples.shape[0] > 1:
                 parent_local_branch_direction = calculate_direction_of_ordered_points(parent_branch_samples)
@@ -675,17 +675,17 @@ class ParameterExtraction:
                 continue
             insertion_distance: float = 0.
             parent_branch_id: int = branch.parent_id
-            joint_point_id: int = branch.joint_point_id
+            joint_point_idx: int = branch.joint_point_idx
             while parent_branch_id > 0:
                 parent_branch: Branch = self._branch_id_to_branch[parent_branch_id]
                 try:
-                    polyline: np.ndarray = np.array(parent_branch.medial_points[parent_branch.active_medial_point_start_idx:joint_point_id+1])
+                    polyline: np.ndarray = np.array(parent_branch.medial_points[parent_branch.active_medial_point_start_idx:joint_point_idx+1])
                     if len(polyline) > 2:
                         diffs = polyline[1:] - polyline[:-1]
                         insertion_distance += np.linalg.norm(diffs, axis=1).sum()
                 except Exception:
                     pass
                 parent_branch_id: int = parent_branch.parent_id
-                joint_point_id: int = parent_branch.joint_point_id
+                joint_point_idx: int = parent_branch.joint_point_idx
             self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "insertion_distance_m"] = insertion_distance
         return

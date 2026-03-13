@@ -29,7 +29,8 @@ class Pipeline:
     
     def _add_fns_to_pipeline(self, id: int, fns: List[Callable[[], Any]]) -> None:
         if id >= 0:
-            id = min(id, len(self._pipeline)) #Eliminate potential order confusion
+            if id > len(self._pipeline):
+                raise IndexError(f"Index {id} is out of range [0, {len(self._pipeline)}].")
             for fn in reversed(fns):
                 self._pipeline.insert(id, fn)
         else:

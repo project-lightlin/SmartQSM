@@ -17,36 +17,36 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
-from typing import Optional, Tuple, List, Dict, Union, Callable, Any, Generator
+from typing import Optional, Tuple, List, Dict, Callable, Any, Generator
 import open3d as o3d
 from scipy.spatial import Delaunay, KDTree
 import networkx as nx
-import matplotlib.cm as cm
 from utils.networkx_extra import weight_edges_by_node_data
 from .pipeline import Pipeline
-import itertools
+from scipy.special import huber
+from utils.scipy_extra import berhu
 
-class SkeletonizationBase(Pipeline):
+class SkeletonizationPipelineBase(Pipeline):
     _edge_weight_function_to_fn: Dict[str, Callable[[Tuple[np.ndarray, Optional[np.ndarray]], Tuple[np.ndarray, Optional[np.ndarray]]], float]]
 
-    _edge_search_param: Optional[float]
+    _edge_search_kwargs: Optional[Dict[str, Any]]
     _edge_weight_function: Optional[str]
     _topology_extractor: str
     
-    _points: Optional[np.ndarray]
+    _graph: Optional[nx.Graph]
+
+    _points: np.ndarray
     _edges: Optional[List[Tuple[int, int]]]
     _skeletal_points: Optional[np.ndarray]
     _skeleton: Optional[nx.DiGraph]
     _radii: Optional[np.ndarray]
-    _graph: Optional[nx.Graph]
     _clusters: Optional[List[np.ndarray]]
 
     def _clear(self) -> None:
-        self._edge_search_param = None
+        self._edge_search_kwargs = None
         self._edge_weight_function = None
         self._topology_extractor = None
 
-        self._points = None
         self._edges = None
         self._graph = None
         self._clusters = None
@@ -61,9 +61,8 @@ class SkeletonizationBase(Pipeline):
         )
 
         self._edge_weight_function_to_fn = {
-            # Vertex Data: (Skeletal point index, Surface point ids in cluster)
-            "l2_norm": lambda u_data, v_data : np.linalg.norm(self._skeletal_points[u_data[0]] - self._skeletal_points[v_data[0]]),
-            "squared_l2_norm": lambda u_data, v_data: np.linalg.norm(self._skeletal_points[u_data[0]] - self._skeletal_points[v_data[0]]) ** 2
+            "l1": lambda point_i_and_cluster_i, point_j_and_cluster_j : np.linalg.norm(self._skeletal_points[point_i_and_cluster_i[0]] - self._skeletal_points[point_j_and_cluster_j[0]]),
+            "l2": lambda point_i_and_cluster_i, point_j_and_cluster_j: np.linalg.norm(self._skeletal_points[point_i_and_cluster_i[0]] - self._skeletal_points[point_j_and_cluster_j[0]]) ** 2
         }
 
         self._skeletal_points = None
@@ -73,107 +72,90 @@ class SkeletonizationBase(Pipeline):
         self._clear()
         return
 
-    def _add_edge_weight_function(self, key: str, value: Callable[[Tuple[np.ndarray, Optional[np.ndarray]], Tuple[np.ndarray, Optional[np.ndarray]]], float]) -> None:
-        self._edge_weight_function_to_fn[key] = value
-        return
-
-    def _convert_edge_search_param(self) -> Union[float, np.ndarray]:
-        # Can be overrided to achieve point by point search radius
-        if self._edge_search_param >= 2.:
-            if int(self._edge_search_param) != self._edge_search_param:
-                raise ValueError(f"edge_search_param should be < 0 (disabled) or == 0 or (0., 2.) or [2,3,...), but got {self._edge_search_param}.")
-            k: int = int(self._edge_search_param)
-            return k
-        return self._edge_search_param
-
     def _construct_graph(self) -> Optional[Tuple[str, o3d.geometry.PointCloud, o3d.geometry.LineSet]]:
-        # Perform delaunay tetrahedralization and fuse edges
-        if self._edge_search_param < 0.:
-            # Do not execute. 
-            pass
-        else:
-            start_nodes: np.ndarray
-            end_nodes: np.ndarray
-            try:
-                simplices: np.ndarray = Delaunay(self._skeletal_points).simplices
-                start_nodes = np.concatenate([
-                    simplices[:, 0],
-                    simplices[:, 0],
-                    simplices[:, 0],
-                    simplices[:, 1],
-                    simplices[:, 1],
-                    simplices[:, 2],
-                ])
-                end_nodes = np.concatenate([
-                    simplices[:, 1],
-                    simplices[:, 2],
-                    simplices[:, 3],
-                    simplices[:, 2],
-                    simplices[:, 3],
-                    simplices[:, 3],
-                ])
-            except Exception:
-                if self._skeletal_points.shape[0] <= 1:
-                    raise ValueError("Cannot construct a graph with less than 2 points.")
-                # Generate a Complete graph
-                # Although the reconstruction of small trees and sparse point clouds is unreliable, efforts should be made to ensure that the process runs smoothly
-                edges: np.ndarray = np.array(
-                    list(itertools.combinations(range(self._skeletal_points.shape[0]), 2))
-                )
-                start_nodes = edges[:, 0]
-                end_nodes = edges[:, 1]
-            
-            edges: np.ndarray
-            # Remove duplication
-            if self._edge_search_param == 0.:
-                # Add all edges generated by Delaunay tetrahedron
-                tet_edges: np.ndarray = np.column_stack((start_nodes, end_nodes))
-                if isinstance(self._edges, list) and len(self._edges) > 0:
-                    edges = np.concatenate([self._edges, tet_edges], axis=0)
-                else:
-                    edges = tet_edges
-            else:
-                kdtree: KDTree = KDTree(self._skeletal_points)
-                neighbor_point_ids_per_point: List[List[int]]
-                # Neighbor relationships can construct connection relationships, and tetrahedra provide connectivity
-                if self._edge_search_param >= 2:
-                    neighbor_point_ids_per_point: List[List[int]] = kdtree.query(self._skeletal_points, k=self._convert_edge_search_param())[1]
-                else:
-                    neighbor_point_ids_per_point: List[List[int]] = kdtree.query_ball_point(self._skeletal_points, r=self._convert_edge_search_param())
+        # Assuming there is no connectivity, use the L2 edge weighted Delaunay graph to solve for the shortest path, then expand it with existing conditions, and finally recalculate the shortest path based on the edge weight function.
+        simplices: np.ndarray = Delaunay(self._skeletal_points).simplices
+        # If an error occurs in this step, it indicates that the point cloud does not have sufficient points.
 
-                neighborhood_edges: Union[List[np.ndarray], np.ndarray] = []
-                for i, neighbor_point_ids in enumerate(neighbor_point_ids_per_point):
-                    neighborhood_edges.append(np.column_stack((
-                        np.ones(len(neighbor_point_ids), dtype=int) * i,
-                        neighbor_point_ids
-                    )))
-                
-                tet_edge_weights: np.ndarray = np.linalg.norm(
-                    self._skeletal_points[start_nodes] - self._skeletal_points[end_nodes],
-                    axis=1
-                )
+        start_nodes: np.ndarray = np.concatenate([
+            simplices[:, 0],
+            simplices[:, 0],
+            simplices[:, 0],
+            simplices[:, 1],
+            simplices[:, 1],
+            simplices[:, 2],
+        ])
+        end_nodes: np.ndarray = np.concatenate([
+            simplices[:, 1],
+            simplices[:, 2],
+            simplices[:, 3],
+            simplices[:, 2],
+            simplices[:, 3],
+            simplices[:, 3],
+        ])
 
-                tet_graph: nx.Graph = nx.Graph()
-                tet_graph.add_weighted_edges_from(zip(start_nodes, end_nodes, tet_edge_weights))
-                tet_edges: np.ndarray = np.array([(edge[0], edge[1]) for edge in list(nx.minimum_spanning_edges(tet_graph))])
+        edge_weights: np.ndarray = np.linalg.norm(
+            (self._skeletal_points[start_nodes] - self._skeletal_points[end_nodes]) ** 2, #L2 only affects SPT, not MST
+            axis=1
+        )
+        graph: nx.Graph = nx.Graph()
+        graph.add_weighted_edges_from(zip(start_nodes, end_nodes, edge_weights))
 
-                neighborhood_edges = np.concatenate(
-                    neighborhood_edges + [tet_edges],
-                    axis=0
-                )
+        nodes: np.ndarray = np.array(list(max(nx.connected_components(graph), key=len)))
+        root_node: int = nodes[np.argmin( #Fixed
+            self._skeletal_points[
+                nodes, # In case of graph disconnection and index modification
+                2
+            ]
+        )]
 
-                # Filter out (v, v)
-                mask: np.ndarray = neighborhood_edges[:, 0] != neighborhood_edges[:, 1]
-                neighborhood_edges = neighborhood_edges[mask]
-                
-                if isinstance(self._edges, list) and len(self._edges) > 0:
-                    edges = np.concatenate([self._edges, neighborhood_edges], axis=0)
-                else:
-                    edges = neighborhood_edges
-            # Remove duplicate undirected edges
-            edges.sort(axis=1)
-            unique_edges: np.ndarray = np.unique(edges, axis=0)
-            self._edges = unique_edges.tolist()
+        edges: List[Tuple[int, int]] = []
+        if self._edges is not None:
+            for u, v in self._edges:
+                edges.append((u, v))
+
+        node_to_predecessors: Dict[int, List[int]] = nx.dijkstra_predecessor_and_distance(
+            graph,
+            root_node
+        )[0]
+
+        for node, predecessors in node_to_predecessors.items():
+            if len(predecessors) > 0:
+                edges.append((predecessors[0], node))
+
+        edges.extend(
+            [
+                (e[0], e[1]) for e in nx.minimum_spanning_edges(graph)
+            ]
+        )
+        
+        kdtree: KDTree = KDTree(self._skeletal_points)
+
+        if "r" in self._edge_search_kwargs:
+            search_radius: float = self._edge_search_kwargs["r"]
+            neighbor_skeletal_point_indices_per_skeletal_point: List[np.ndarray] = kdtree.query_ball_point(
+                self._skeletal_points,
+                r=search_radius
+            )
+            for skeletal_point_idx, neighbor_skeletal_point_indices in enumerate(neighbor_skeletal_point_indices_per_skeletal_point):
+                for neighbor_skeletal_point_idx in neighbor_skeletal_point_indices:
+                    if neighbor_skeletal_point_idx == skeletal_point_idx:
+                        continue
+                    edges.append((skeletal_point_idx, neighbor_skeletal_point_idx))
+        
+        if "k" in self._edge_search_kwargs:
+            k: int = self._edge_search_kwargs["k"]
+            neighbor_skeletal_point_indices_per_skeletal_point: List[np.ndarray] = kdtree.query(
+                self._skeletal_points,
+                k=k
+            )[1]
+            for skeletal_point_idx, neighbor_skeletal_point_indices in enumerate(neighbor_skeletal_point_indices_per_skeletal_point):
+                for neighbor_skeletal_point_idx in neighbor_skeletal_point_indices:
+                    if neighbor_skeletal_point_idx == skeletal_point_idx:
+                        continue
+                    edges.append((skeletal_point_idx, neighbor_skeletal_point_idx))
+        
+        self._edges = np.unique(np.sort(np.array(edges), axis=1), axis=0).tolist()
 
         self._graph = nx.Graph()
         node_to_point_and_cluster: Dict[int, Tuple[np.ndarray, Optional[np.ndarray]]] = {}
@@ -206,14 +188,15 @@ class SkeletonizationBase(Pipeline):
         return f"Generated a graph with {len(self._edges)} edge(s) for skeleton extaction.", cloud, lineset
     
     def _extract_skeleton(self) -> Optional[Tuple[str, o3d.geometry.PointCloud, o3d.geometry.LineSet]]:
-        # Produce skeleton
-        root_node: int = np.argmin(
+        nodes: np.ndarray = np.array(list(max(nx.connected_components(self._graph), key=len)))
+        root_node: int = nodes[np.argmin( #Fixed
             self._skeletal_points[
-                np.array(list(max(nx.connected_components(self._graph), key=len))), # In case of graph disconnection and index modification
+                nodes, # In case of graph disconnection and index modification
                 2
             ]
-        )
-        
+        )]
+
+        # Produce skeleton
         if self._topology_extractor == "spt":
             self._skeleton = nx.DiGraph()
             node_to_predecessors: Dict[int, List[int]] = nx.dijkstra_predecessor_and_distance(
@@ -257,13 +240,27 @@ class SkeletonizationBase(Pipeline):
     def set_params(
             self,
             *,
-            edge_search_param: float = 0.,
-            edge_weight_function: str = "squared_l2_norm",
+            edge_search_kwargs: Dict[str, Any] = {},
+            edge_weight_function: str = "l1",
+            edge_weight_function_kwargs: Dict[str, Any] = {},
             topology_extractor: str = "spt"
     ) -> None:
-        self._edge_search_param = edge_search_param
+        self._edge_search_kwargs = edge_search_kwargs
         self._edge_weight_function = edge_weight_function
         self._topology_extractor = topology_extractor
+
+        self._edge_weight_function_to_fn.update(
+            {
+                "huber": lambda point_i_and_cluster_i, point_j_and_cluster_j, delta=edge_weight_function_kwargs.get("delta"): huber(
+                    delta, 
+                    np.linalg.norm(self._skeletal_points[point_i_and_cluster_i[0]] - self._skeletal_points[point_j_and_cluster_j[0]])
+                ),
+                "berhu": lambda point_i_and_cluster_i, point_j_and_cluster_j, delta=edge_weight_function_kwargs.get("delta"): berhu(
+                    delta, 
+                    np.linalg.norm(self._skeletal_points[point_i_and_cluster_i[0]] - self._skeletal_points[point_j_and_cluster_j[0]])
+                ),
+            }
+        )
 
         super()._clear_pipeline()
         super()._add_fns_to_pipeline(len(self._pipeline), [
@@ -276,12 +273,12 @@ class SkeletonizationBase(Pipeline):
         self._skeletal_points = None
         self._skeleton = None
         self._radii = None
-
-        self._points = points
         
+        self._points = points
         for fn in self._pipeline:
             yield fn()
 
         self._clear()
+        
         return self._skeletal_points, self._skeleton, self._radii
     
