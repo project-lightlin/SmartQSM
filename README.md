@@ -46,13 +46,12 @@ and supports the extraction of [82 multiscale parameters (Click here to view det
 
 ## :medal_sports: Contributors
 
-> ### Author
+> ### Author & Maintainer
 > - @teduzhu Dr. Jie Yang (杨杰), Beijing Forestry University ([nj_yang_jie@bjfu.edu.cn](mailto:nj_yang_jie@bjfu.edu.cn))
-> ### Facilitator
-> - @jk160804211 Dr. Kang Jiang (蒋康), Nanjing Forestry University (who provided reimplementation of space colonization)
-> ### Tester
-> - @Luneighbour Mr. Nanbo Lu (鲁南博), Central South University of Forestry & Technology
-> ### Special Thanks
+> ### Contributors
+> - @jk160804211 Dr. Kang Jiang (蒋康), Nanjing Forestry University *who provides reimplementation of space colonization*
+> - @Luneighbour Mr. Nanbo Lu (鲁南博), Central South University of Forestry & Technology *who assists with testing*
+> ### Acknowledgements
 > 
 
 ## :balance_scale: License
