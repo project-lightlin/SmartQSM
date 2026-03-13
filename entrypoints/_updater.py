@@ -365,7 +365,6 @@ import os, shutil, stat, sys, time, traceback, webbrowser, psutil
 import tkinter as tk
 from tkinter import messagebox
 import importlib.util
-import io
 
 _root = None
 
@@ -502,19 +501,7 @@ def main():
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
             if hasattr(mod, "run_post_install"):
-                old_stdout = sys.stdout
-                old_stderr = sys.stderr
-                try:
-                    sys.stdout = io.StringIO()
-                    sys.stderr = io.StringIO()
-                    mod.run_post_install(root_dir)
-                except Exception as post_err:
-                    sys.stdout = old_stdout
-                    sys.stderr = old_stderr
-                    raise post_err
-                finally:
-                    sys.stdout = old_stdout
-                    sys.stderr = old_stderr
+                mod.run_post_install(root_dir)
         except Exception:
             message = f"{traceback.format_exc()}\n------------------------\nThe necessary features have been installed, but the post installation failed.\nPlease manually execute \"python.exe post_installation.py\" in the correct CONDA environment and under the correct working directory later."
             if gui:
@@ -554,9 +541,7 @@ if __name__ == "__main__":
         subprocess.Popen(
             [sys.executable, worker_path, temp_dir, ROOT_DIR, str(1 if gui else 0)],
             close_fds=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NEW_CONSOLE 
         )
         
         os._exit(0)
