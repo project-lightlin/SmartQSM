@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.0.4",
+            "codename": "Ginkgo",
+            "released": "2026/03/13",
+            "changelog": [
+                {
+                    "title": "Optimized the code for parameter extraction.",
+                    "released": "2026/03/13",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.3",
             "codename": "Ginkgo",
             "released": "2026/03/13",

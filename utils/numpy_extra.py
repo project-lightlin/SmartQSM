@@ -31,27 +31,15 @@ def calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
     angle = np.rad2deg(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
     return angle
 
-def calculate_distances_from_points_to_line(Ps: np.ndarray, M: np.ndarray, N: np.ndarray) -> np.ndarray:
-    Ps = np.array(Ps)
-    M = np.array(M)
-    N = np.array(N)
-    
-    MN = N - M
-    
-    denominator_scalar = np.dot(MN, MN)
-    if denominator_scalar == 0:
+def calculate_distances_from_points_to_line(points: np.ndarray, line_start: np.ndarray, line_end: np.ndarray) -> np.ndarray:
+    line_vec = line_end - line_start
+    denom = np.dot(line_vec, line_vec)
+    if denom == 0:
         raise ValueError("M and N are the same point, cannot form a line.")
-    
-    MP_vectors = Ps - M
-    
-    proj_lengths = np.dot(MP_vectors, MN) / denominator_scalar
-    
-    proj_vectors = proj_lengths[:, np.newaxis] * MN
-    
-    h_vectors = MP_vectors - proj_vectors
-    
-    distances = np.linalg.norm(h_vectors, axis=1)
-    
+    vectors = points - line_start
+    projections = (vectors @ line_vec) / denom
+    projected_points = line_start + projections[:, None] * line_vec
+    distances = np.linalg.norm(points - projected_points, axis=1)
     return distances
 
 def calculate_distances_from_points_to_surface(Ps: np.ndarray, A: np.ndarray, B: np.ndarray, C: np.ndarray) -> float:

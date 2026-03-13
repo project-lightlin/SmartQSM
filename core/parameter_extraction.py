@@ -38,20 +38,27 @@ def _sample_polyline(points, max_radius, step):
     seg_lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
     dist_along = np.cumsum(np.insert(seg_lengths, 0, 0.0))
     sample_dists = np.arange(0, max_radius + 1e-12, step)
-    samples = []
-    for sd in sample_dists:
-        if sd > dist_along[-1]:
-            break
-        idx = np.searchsorted(dist_along, sd) - 1
-        idx = max(idx, 0)
-        seg_len = seg_lengths[idx]
-        if seg_len == 0:
-            samples.append(points[idx])
-            continue
-        t = (sd - dist_along[idx]) / seg_len
-        p = points[idx] * (1 - t) + points[idx+1] * t
-        samples.append(p)
-    return np.array(samples)
+    if sample_dists.size == 0:
+        return np.empty((0, points.shape[1]), dtype=points.dtype)
+    sample_dists = sample_dists[sample_dists <= dist_along[-1]]
+    if sample_dists.size == 0:
+        return np.empty((0, points.shape[1]), dtype=points.dtype)
+
+    idx = np.searchsorted(dist_along, sample_dists, side="right") - 1
+    idx = np.clip(idx, 0, len(seg_lengths) - 1)
+    seg_len = seg_lengths[idx]
+
+    t = np.zeros_like(sample_dists, dtype=np.float64)
+    non_zero = seg_len > 0
+    t[non_zero] = (sample_dists[non_zero] - dist_along[idx[non_zero]]) / seg_len[non_zero]
+
+    p0 = points[idx]
+    p1 = points[idx + 1]
+    samples = p0 * (1.0 - t)[:, None] + p1 * t[:, None]
+    if np.any(~non_zero):
+        samples[~non_zero] = p0[~non_zero]
+    return samples
+
 
 class ParameterExtraction:
     _branch_id_to_branch: Dict[int, Branch]
@@ -197,16 +204,22 @@ class ParameterExtraction:
         return
     
     def _extract(self) -> None:
+        branch_dataframe = self.branch_dataframe
+        tree_dataframe = self.tree_dataframe
+        branch_id_to_row_id: Dict[int, int] = {}
+        for row_id in branch_dataframe.index:
+            branch_id_to_row_id[int(branch_dataframe.at[row_id, "id"])] = int(row_id)
+
         # General
         trunk: Branch = self._branch_id_to_branch[1]
         tree_position: np.ndarray = trunk.medial_points[0][:2]
         z_min: float = np.min(self._points[:, 2])
         tree_height: float = np.max(self._points[:, 2]) - z_min
-        self.tree_dataframe.loc[0, "X_m"] = tree_position[0] - self._global_shift[0]
-        self.tree_dataframe.loc[0, "Y_m"] = tree_position[1] - self._global_shift[1]
-        self.tree_dataframe.loc[0, "altitude_m"] = -self._global_shift[2] + z_min
-        self.tree_dataframe.loc[0, "num_branches"] = len(self._branch_id_to_branch)
-        self.tree_dataframe.loc[0, "height_m"] = tree_height
+        tree_dataframe.at[0, "X_m"] = tree_position[0] - self._global_shift[0]
+        tree_dataframe.at[0, "Y_m"] = tree_position[1] - self._global_shift[1]
+        tree_dataframe.at[0, "altitude_m"] = -self._global_shift[2] + z_min
+        tree_dataframe.at[0, "num_branches"] = len(self._branch_id_to_branch)
+        tree_dataframe.at[0, "height_m"] = tree_height
 
         # Girth
         points_at_breast_height: np.ndarray = self._points[(self._points[:, 2] - z_min >= 1.3 - self._disc_thickness / 2.) & (self._points[:, 2] - z_min <= 1.3 + self._disc_thickness / 2.)]
@@ -224,7 +237,7 @@ class ParameterExtraction:
             girth = ConvexHull(projected_points).area
         except Exception:
             pass
-        self.tree_dataframe.loc[0, "girth_m"] = girth
+        tree_dataframe.at[0, "girth_m"] = girth
 
         # Trunk diameters & length
         ground_diameter: float = 0.
@@ -248,11 +261,11 @@ class ParameterExtraction:
         if ground_diameter == 0.:
             ground_diameter = 2. * self._branch_id_to_branch[1].radii[0]
         trunk_length: float = cumulative_lengths_of_points[-1]
-        self.tree_dataframe.loc[0, "ground_diameter_cm"] = ground_diameter * 100.
-        self.tree_dataframe.loc[0, "DBH_cm"] = dbh * 100.
-        self.tree_dataframe.loc[0, "mid_length_diameter_cm"] = mid_length_diameter * 100.
-        self.tree_dataframe.loc[0, "tip_diameter_cm"] = trunk.radii[-1] * 2. * 100.
-        self.tree_dataframe.loc[0, "trunk_length_m"] = trunk_length
+        tree_dataframe.at[0, "ground_diameter_cm"] = ground_diameter * 100.
+        tree_dataframe.at[0, "DBH_cm"] = dbh * 100.
+        tree_dataframe.at[0, "mid_length_diameter_cm"] = mid_length_diameter * 100.
+        tree_dataframe.at[0, "tip_diameter_cm"] = trunk.radii[-1] * 2. * 100.
+        tree_dataframe.at[0, "trunk_length_m"] = trunk_length
         stem_length: float = trunk_length
 
         # Bole height; max branch order
@@ -281,15 +294,18 @@ class ParameterExtraction:
                 base_to_start_direction /= np.linalg.norm(base_to_start_direction)
                 base_height = branch.medial_points[-1][2] - (d_base / 2.) * np.sqrt(1. - np.clip(np.dot(base_to_start_direction, [0., 0., 1.]).item() ** 2., 0., 1.)) - z_min
                 pass
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "base_height_m"] = base_height
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "base_diameter_cm"] = d_base * 100.
+            row_id = branch_id_to_row_id[branch_id]
+            branch_dataframe.at[row_id, "base_height_m"] = base_height
+            branch_dataframe.at[row_id, "base_diameter_cm"] = d_base * 100.
             
             min_base_height = min(min_base_height, base_height)
             branch_order: int = branch.order
             max_branch_order = max(max_branch_order, branch_order)
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "order"] = branch_order
-            is_a_main_branch: Callable[[], bool] = lambda: d_base >= 0.2 * (dbh if branch_order == 1 else self.branch_dataframe.loc[self.branch_dataframe["id"] == branch.parent_id, "base_diameter_cm"].item() / 100)
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "is_a_main_branch"] = is_a_main_branch()
+            branch_dataframe.at[row_id, "order"] = branch_order
+            parent_row_id = branch_id_to_row_id.get(branch.parent_id, -1)
+            parent_base_diameter = branch_dataframe.at[parent_row_id, "base_diameter_cm"] / 100 if parent_row_id != -1 else dbh
+            is_a_main_branch: Callable[[], bool] = lambda: d_base >= 0.2 * (dbh if branch_order == 1 else parent_base_diameter)
+            branch_dataframe.at[row_id, "is_a_main_branch"] = is_a_main_branch()
             if branch_order == 1 and is_a_main_branch():
                 bole_height = min(bole_height, base_height)
             
@@ -307,17 +323,17 @@ class ParameterExtraction:
                         )
             except Exception:
                 pass
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "mid_length_diameter_cm"] = mid_length_diameter * 100.
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "tip_diameter_cm"] = branch.radii[-1] * 2. * 100.
+            branch_dataframe.at[row_id, "mid_length_diameter_cm"] = mid_length_diameter * 100.
+            branch_dataframe.at[row_id, "tip_diameter_cm"] = branch.radii[-1] * 2. * 100.
             branch_length: float = cumulative_lengths_of_points[-1]
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "length_m"] = branch_length
+            branch_dataframe.at[row_id, "length_m"] = branch_length
             stem_length += branch_length
 
         if bole_height == np.inf:
             bole_height = min_base_height if min_base_height != np.inf else 0.0
-        self.tree_dataframe.loc[0, "bole_height_m"] = bole_height
-        self.tree_dataframe.loc[0, "max_order"] = max_branch_order
-        self.tree_dataframe.loc[0, "stem_length_m"] = stem_length
+        tree_dataframe.at[0, "bole_height_m"] = bole_height
+        tree_dataframe.at[0, "max_order"] = max_branch_order
+        tree_dataframe.at[0, "stem_length_m"] = stem_length
         
         # Trunk / branch / stem area & volume
         trunk_area: float = trunk.backup_arterial_snake.get_surface_area()
@@ -326,8 +342,8 @@ class ParameterExtraction:
             trunk_volume = calculate_rough_volume(trunk.backup_arterial_snake, trunk.num_sectional_vertices) 
         except Exception:
             pass
-        self.tree_dataframe.loc[0, "trunk_area_m2"] = trunk_area
-        self.tree_dataframe.loc[0, "trunk_volume_L"] = trunk_volume * 1000.
+        tree_dataframe.at[0, "trunk_area_m2"] = trunk_area
+        tree_dataframe.at[0, "trunk_volume_L"] = trunk_volume * 1000.
         stem_area: float = trunk_area
         stem_volume: float = trunk_volume
         for branch_id, branch in self._branch_id_to_branch.items():
@@ -341,10 +357,11 @@ class ParameterExtraction:
                 pass
             stem_area += branch_area
             stem_volume += branch_volume
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "area_m2"] = branch_area
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "volume_L"] = branch_volume * 1000.
-        self.tree_dataframe.loc[0, "stem_area_m2"] = stem_area
-        self.tree_dataframe.loc[0, "stem_volume_L"] = stem_volume * 1000.
+            row_id = branch_id_to_row_id[branch_id]
+            branch_dataframe.at[row_id, "area_m2"] = branch_area
+            branch_dataframe.at[row_id, "volume_L"] = branch_volume * 1000.
+        tree_dataframe.at[0, "stem_area_m2"] = stem_area
+        tree_dataframe.at[0, "stem_volume_L"] = stem_volume * 1000.
         
         # Locating the bole top
         bole_top_id: int = 0
@@ -357,7 +374,8 @@ class ParameterExtraction:
             if branch_id == 1: # Trunk
                 continue
             if branch.order == 1:
-                if self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "base_height_m"].item() >= bole_height:
+                row_id = branch_id_to_row_id[branch_id]
+                if branch_dataframe.at[row_id, "base_height_m"] >= bole_height:
                     within_crown_branch_ids.add(branch_id)
             else:
                 if branch.parent_id in within_crown_branch_ids:
@@ -375,10 +393,10 @@ class ParameterExtraction:
             active_crown_vertex_start_in_trunk_mesh = len(bole_mesh.vertices)
             bole_area = bole_mesh.get_surface_area()
             bole_volume = calculate_rough_volume(bole_mesh, trunk.num_sectional_vertices)
-        self.tree_dataframe.loc[0, "bole_length_m"] = bole_length
-        self.tree_dataframe.loc[0, "bole_area_m2"] = bole_area
-        self.tree_dataframe.loc[0, "bole_volume_L"] = bole_volume * 1000.
-        self.tree_dataframe.loc[0, "diameter_at_bole_height_cm"] = trunk.radii[bole_top_id] * 2. * 100.
+        tree_dataframe.at[0, "bole_length_m"] = bole_length
+        tree_dataframe.at[0, "bole_area_m2"] = bole_area
+        tree_dataframe.at[0, "bole_volume_L"] = bole_volume * 1000.
+        tree_dataframe.at[0, "diameter_at_bole_height_cm"] = trunk.radii[bole_top_id] * 2. * 100.
 
         # Active crown (based on mesh)
         active_crown_cloud: o3d.geometry.PointCloud = o3d.geometry.PointCloud()
@@ -392,15 +410,16 @@ class ParameterExtraction:
             if branch_id == 1:
                 continue
             if branch_id in within_crown_branch_ids:
-                within_crown_branch_length += self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "length_m"].item()
-                within_crown_branch_area += self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "area_m2"].item()
-                within_crown_branch_volume_L += self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "volume_L"].item()
+                row_id = branch_id_to_row_id[branch_id]
+                within_crown_branch_length += branch_dataframe.at[row_id, "length_m"]
+                within_crown_branch_area += branch_dataframe.at[row_id, "area_m2"]
+                within_crown_branch_volume_L += branch_dataframe.at[row_id, "volume_L"]
                 branch_cloud: o3d.geometry.PointCloud = o3d.geometry.PointCloud()
                 branch_cloud.points = o3d.utility.Vector3dVector(np.asarray(branch.arterial_snake.vertices))
                 active_crown_cloud += branch_cloud
-        self.tree_dataframe.loc[0, "within_crown_stem_length_m"] = within_crown_branch_length + self.tree_dataframe.loc[0, "trunk_length_m"] - self.tree_dataframe.loc[0, "bole_length_m"]
-        self.tree_dataframe.loc[0, "within_crown_stem_area_m2"] = within_crown_branch_area + self.tree_dataframe.loc[0, "trunk_area_m2"] - self.tree_dataframe.loc[0, "bole_area_m2"]
-        self.tree_dataframe.loc[0, "within_crown_stem_volume_L"] = within_crown_branch_volume_L  + self.tree_dataframe.loc[0, "trunk_volume_L"] - self.tree_dataframe.loc[0, "bole_volume_L"]
+        tree_dataframe.at[0, "within_crown_stem_length_m"] = within_crown_branch_length + tree_dataframe.at[0, "trunk_length_m"] - tree_dataframe.at[0, "bole_length_m"]
+        tree_dataframe.at[0, "within_crown_stem_area_m2"] = within_crown_branch_area + tree_dataframe.at[0, "trunk_area_m2"] - tree_dataframe.at[0, "bole_area_m2"]
+        tree_dataframe.at[0, "within_crown_stem_volume_L"] = within_crown_branch_volume_L  + tree_dataframe.at[0, "trunk_volume_L"] - tree_dataframe.at[0, "bole_volume_L"]
         
         # Canopy area (not only including the crown projection)
         canopy_mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh()
@@ -413,7 +432,7 @@ class ParameterExtraction:
         canopy_mesh.cluster_connected_triangles()
         canopy_mesh.remove_duplicated_vertices()
         canopy_mesh.remove_duplicated_triangles()
-        self.tree_dataframe.loc[0, "canopy_area_m2"] = canopy_mesh.get_surface_area()
+        tree_dataframe.at[0, "canopy_area_m2"] = canopy_mesh.get_surface_area()
 
         # Crown (project) convex hull parameters
         crown_cloud: o3d.geometry.PointCloud = o3d.geometry.PointCloud()
@@ -424,8 +443,8 @@ class ParameterExtraction:
 
         self.crown_convex_hull = crown_cloud.compute_convex_hull()[0]
         crown_convex_hull: ConvexHull = ConvexHull(np.asarray(self.crown_convex_hull.vertices))
-        self.tree_dataframe.loc[0, "crown_convex_area_m2"] =  crown_convex_hull.area
-        self.tree_dataframe.loc[0, "crown_convex_volume_L"] = crown_convex_hull.volume * 1000.
+        tree_dataframe.at[0, "crown_convex_area_m2"] =  crown_convex_hull.area
+        tree_dataframe.at[0, "crown_convex_volume_L"] = crown_convex_hull.volume * 1000.
         
         crown_projection_convex_area: float = 0.0
         crown_perimeter: float = 0.0
@@ -436,8 +455,8 @@ class ParameterExtraction:
             crown_perimeter = crown_projection_convex_hull.area # 2D area is the perimeter
         except Exception:
             pass
-        self.tree_dataframe.loc[0, "crown_projection_convex_area_m2"] = crown_projection_convex_area
-        self.tree_dataframe.loc[0, "crown_perimeter_m"] = crown_perimeter
+        tree_dataframe.at[0, "crown_projection_convex_area_m2"] = crown_projection_convex_area
+        tree_dataframe.at[0, "crown_perimeter_m"] = crown_perimeter
 
         crown_center: np.ndarray = (crown_projection_points.min(axis=0) + crown_projection_points.max(axis=0)) / 2.
         crown_projection_convex_polygon_vertices: np.ndarray = crown_projection_points[crown_projection_convex_hull.vertices]
@@ -453,88 +472,81 @@ class ParameterExtraction:
             activate_crown_convex_hull_volume = activate_crown_convex_hull.volume 
         except Exception:
             pass
-        self.tree_dataframe.loc[0, "active_crown_convex_area_m2"] = activate_crown_convex_hull_area
-        self.tree_dataframe.loc[0, "active_crown_convex_volume_L"] = activate_crown_convex_hull_volume * 1000. 
+        tree_dataframe.at[0, "active_crown_convex_area_m2"] = activate_crown_convex_hull_area
+        tree_dataframe.at[0, "active_crown_convex_volume_L"] = activate_crown_convex_hull_volume * 1000. 
 
         # Crown width
-        self.tree_dataframe.loc[0, "east_west_crown_width_m"] = crown_projection_points[:, 0].max() - crown_projection_points[:, 0].min()
-        self.tree_dataframe.loc[0, "north_south_crown_width_m"] = crown_projection_points[:, 1].max() - crown_projection_points[:, 1].min()
+        tree_dataframe.at[0, "east_west_crown_width_m"] = crown_projection_points[:, 0].max() - crown_projection_points[:, 0].min()
+        tree_dataframe.at[0, "north_south_crown_width_m"] = crown_projection_points[:, 1].max() - crown_projection_points[:, 1].min()
         
-        min_crown_width: float = np.inf
-        azimuth_of_min_crown_width: float = 0.
-        mean_crown_width: float = 0.
-        max_crown_width: float = -np.inf
-        azimuth_of_max_crown_width: float = 0.
-        for i in range(0, int(180. / self._degree_resolution)):
-            angle: float = i * self._degree_resolution
-            dx: float = np.cos(np.deg2rad(angle))
-            dy: float = np.sin(np.deg2rad(angle))
+        angle_count = int(180. / self._degree_resolution)
+        angles = np.arange(angle_count, dtype=np.float64) * self._degree_resolution
+        angle_radians = np.deg2rad(angles)
+        directions = np.stack([np.cos(angle_radians), np.sin(angle_radians)], axis=1)
+        all_projections: np.ndarray = (crown_projection_points - crown_center) @ directions.T
+        crown_widths: np.ndarray = all_projections.max(axis=0) - all_projections.min(axis=0)
+        width_azimuths: np.ndarray = np.where(angles <= 90., 90. - angles, 270. - angles)
 
-            projections: np.ndarray = (crown_projection_points - crown_center) @ np.array([dx, dy])
-            crown_width = projections.max() - projections.min()
-
-            azimuth: float = 90 - angle if angle <= 90 else 270 - angle
-            if crown_width < min_crown_width:
-                min_crown_width = crown_width
-                azimuth_of_min_crown_width = azimuth
-            if crown_width > max_crown_width:
-                max_crown_width = crown_width
-                azimuth_of_max_crown_width = azimuth
-
-            mean_crown_width += crown_width
-        mean_crown_width /= int(180. / self._degree_resolution)
-        self.tree_dataframe.loc[0, "min_crown_width_m"] = min_crown_width
-        self.tree_dataframe.loc[0, "azimuth_of_min_crown_width_deg"] = azimuth_of_min_crown_width
-        self.tree_dataframe.loc[0, "mean_crown_width_m"] = mean_crown_width
-        self.tree_dataframe.loc[0, "max_crown_width_m"] = max_crown_width
-        self.tree_dataframe.loc[0, "azimuth_of_max_crown_width_deg"] = azimuth_of_max_crown_width
+        min_crown_width_idx = int(np.argmin(crown_widths))
+        max_crown_width_idx = int(np.argmax(crown_widths))
+        tree_dataframe.at[0, "min_crown_width_m"] = crown_widths[min_crown_width_idx]
+        tree_dataframe.at[0, "azimuth_of_min_crown_width_deg"] = width_azimuths[min_crown_width_idx]
+        tree_dataframe.at[0, "mean_crown_width_m"] = crown_widths.mean()
+        tree_dataframe.at[0, "max_crown_width_m"] = crown_widths[max_crown_width_idx]
+        tree_dataframe.at[0, "azimuth_of_max_crown_width_deg"] = width_azimuths[max_crown_width_idx]
         
         # Crown radius
         intervalwise_crown_radii: np.ndarray = np.zeros(36, dtype=np.float32)
         azimuths_of_intervalwise_crown_radius: np.ndarray = np.zeros(36, dtype=np.float32)
         heights_at_intervalwise_crown_radius: np.ndarray = np.zeros(36, dtype=np.float32)
 
-        for i in range(crown_projection_points.shape[0]):
-            azimuth: float = calculate_heading_angle(crown_projection_points[i] - crown_center)
-            max_crown_radius_in_interval: float = intervalwise_crown_radii[int(azimuth // 10)]
-            centrifugal_distance: float = np.linalg.norm(crown_projection_points[i] - crown_center)
-            if max_crown_radius_in_interval < centrifugal_distance:
-                azimuths_of_intervalwise_crown_radius[int(azimuth // 10)] = azimuth
-                intervalwise_crown_radii[int(azimuth // 10)] = centrifugal_distance
-                heights_at_intervalwise_crown_radius[int(azimuth // 10)] = crown_points[i, 2] - z_min
+        crown_projection_point_offsets = crown_projection_points - crown_center
+        point_azimuths: np.ndarray = (np.degrees(np.arctan2(crown_projection_point_offsets[:, 0], crown_projection_point_offsets[:, 1])) + 360.) % 360.
+        point_distances: np.ndarray = np.linalg.norm(crown_projection_point_offsets, axis=1)
+        interval_ids: np.ndarray = (point_azimuths // 10).astype(np.int32)
+        crown_relative_heights = crown_points[:, 2] - z_min
+        for interval_id in range(36):
+            in_interval = interval_ids == interval_id
+            if not np.any(in_interval):
+                continue
+            local_indices = np.where(in_interval)[0]
+            local_max_idx = local_indices[int(np.argmax(point_distances[in_interval]))]
+            intervalwise_crown_radii[interval_id] = point_distances[local_max_idx]
+            azimuths_of_intervalwise_crown_radius[interval_id] = point_azimuths[local_max_idx]
+            heights_at_intervalwise_crown_radius[interval_id] = crown_relative_heights[local_max_idx]
         interval_id_of_min_crown_radius: int = np.argmin(intervalwise_crown_radii)
         interval_id_of_max_crown_radius: int = np.argmax(intervalwise_crown_radii)
-        self.tree_dataframe.loc[0, "min_crown_radius_m"] = intervalwise_crown_radii[interval_id_of_min_crown_radius]
-        self.tree_dataframe.loc[0, "azimuth_of_min_crown_radius_deg"] = azimuths_of_intervalwise_crown_radius[interval_id_of_min_crown_radius]
-        self.tree_dataframe.loc[0, "height_at_min_crown_radius_m"] = heights_at_intervalwise_crown_radius[interval_id_of_min_crown_radius]
-        self.tree_dataframe.loc[0, "mean_crown_radius_m"] = intervalwise_crown_radii.mean()
-        self.tree_dataframe.loc[0, "max_crown_radius_m"] = intervalwise_crown_radii[interval_id_of_max_crown_radius]
-        self.tree_dataframe.loc[0, "azimuth_of_max_crown_radius_deg"] = azimuths_of_intervalwise_crown_radius[interval_id_of_max_crown_radius]
-        self.tree_dataframe.loc[0, "height_at_max_crown_radius_m"] = heights_at_intervalwise_crown_radius[interval_id_of_max_crown_radius]
+        tree_dataframe.at[0, "min_crown_radius_m"] = intervalwise_crown_radii[interval_id_of_min_crown_radius]
+        tree_dataframe.at[0, "azimuth_of_min_crown_radius_deg"] = azimuths_of_intervalwise_crown_radius[interval_id_of_min_crown_radius]
+        tree_dataframe.at[0, "height_at_min_crown_radius_m"] = heights_at_intervalwise_crown_radius[interval_id_of_min_crown_radius]
+        tree_dataframe.at[0, "mean_crown_radius_m"] = intervalwise_crown_radii.mean()
+        tree_dataframe.at[0, "max_crown_radius_m"] = intervalwise_crown_radii[interval_id_of_max_crown_radius]
+        tree_dataframe.at[0, "azimuth_of_max_crown_radius_deg"] = azimuths_of_intervalwise_crown_radius[interval_id_of_max_crown_radius]
+        tree_dataframe.at[0, "height_at_max_crown_radius_m"] = heights_at_intervalwise_crown_radius[interval_id_of_max_crown_radius]
 
         # Tree center-based 2D crown parameters (including offset and spread)
         tree_position_point: Point = Point(tree_position)
         crown_center_coordinate_offsets: np.ndarray = crown_center - tree_position
-        self.tree_dataframe.loc[0, "crown_center_offset_m"] = np.linalg.norm(crown_center_coordinate_offsets)
-        self.tree_dataframe.loc[0, "crown_center_azimuth_deg"] = calculate_heading_angle(crown_center_coordinate_offsets)
+        tree_dataframe.at[0, "crown_center_offset_m"] = np.linalg.norm(crown_center_coordinate_offsets)
+        tree_dataframe.at[0, "crown_center_azimuth_deg"] = calculate_heading_angle(crown_center_coordinate_offsets)
         nearest_crown_boundary_point: Point = nearest_points(tree_position_point, crown_projection_convex_polygon.boundary)[1]
-        self.tree_dataframe.loc[0, "min_crown_spread_m"] = tree_position_point.distance(nearest_crown_boundary_point) # The min distance between a point and a polygon should be a point-line or point-point distance
-        self.tree_dataframe.loc[0, "azimuth_of_min_crown_spread_deg"] = calculate_heading_angle(np.array([nearest_crown_boundary_point.x - tree_position_point.x, nearest_crown_boundary_point.y - tree_position_point.y]))
+        tree_dataframe.at[0, "min_crown_spread_m"] = tree_position_point.distance(nearest_crown_boundary_point)
+        tree_dataframe.at[0, "azimuth_of_min_crown_spread_deg"] = calculate_heading_angle(np.array([nearest_crown_boundary_point.x - tree_position_point.x, nearest_crown_boundary_point.y - tree_position_point.y]))
         centrifugal_distances_to_crown_projection_convex_polygon_vertices: np.ndarray = np.linalg.norm(crown_projection_convex_polygon_vertices - tree_position, axis=1)
         farthest_crown_projection_convex_polygon_vertex_id: int = np.argmax(centrifugal_distances_to_crown_projection_convex_polygon_vertices)
-        self.tree_dataframe.loc[0, "max_crown_spread_m"] = centrifugal_distances_to_crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id] ## The min distance between a point and a polygon must be a point-point distance
-        self.tree_dataframe.loc[0, "azimuth_of_max_crown_spread_deg"] = calculate_heading_angle(crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id] - tree_position) 
+        tree_dataframe.at[0, "max_crown_spread_m"] = centrifugal_distances_to_crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id]
+        tree_dataframe.at[0, "azimuth_of_max_crown_spread_deg"] = calculate_heading_angle(crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id] - tree_position) 
 
         # Azimuth & zenith & max horizontal extension & chord length & arc height
         trunk_displacement: np.ndarray = trunk.medial_points[-1] - trunk.medial_points[0]
         trunk_chord_length: float = np.linalg.norm(trunk_displacement)
-        self.tree_dataframe.loc[0, "max_spread_m"] = np.linalg.norm(trunk.medial_points[1:, :2] - trunk.medial_points[0, :2], axis=-1).max()
-        self.tree_dataframe.loc[0, "azimuth_deg"] = calculate_heading_angle(trunk_displacement[:2]) 
-        self.tree_dataframe.loc[0, "zenith_deg"] = calculate_angle_between_vectors(
+        tree_dataframe.at[0, "max_spread_m"] = np.linalg.norm(trunk.medial_points[1:, :2] - trunk.medial_points[0, :2], axis=-1).max()
+        tree_dataframe.at[0, "azimuth_deg"] = calculate_heading_angle(trunk_displacement[:2]) 
+        tree_dataframe.at[0, "zenith_deg"] = calculate_angle_between_vectors(
             np.array([0., 0., 1.]), normalize(trunk_displacement)
         )
-        self.tree_dataframe.loc[0, "chord_length_m"] = trunk_chord_length
-        self.tree_dataframe.loc[0, "arc_height_m"] = np.max(calculate_distances_from_points_to_line(trunk.medial_points, trunk.medial_points[0], trunk.medial_points[-1]))
+        tree_dataframe.at[0, "chord_length_m"] = trunk_chord_length
+        tree_dataframe.at[0, "arc_height_m"] = np.max(calculate_distances_from_points_to_line(trunk.medial_points, trunk.medial_points[0], trunk.medial_points[-1]))
         for branch_id, branch in self._branch_id_to_branch.items():
             branch_chord_length: float = 0.0
             max_spread: float = 0.0
@@ -556,13 +568,15 @@ class ParameterExtraction:
                 max_spread = np.linalg.norm(branch.medial_points[branch.active_medial_point_start_idx + 1:, :2] - branch.medial_points[branch.active_medial_point_start_idx, :2], axis=-1).max()
             except Exception:
                 pass
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "max_spread_m"] = max_spread
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "azimuth_deg"] = azimuth_angle
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "zenith_deg"] = zenith_angle
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "chord_length_m"] = branch_chord_length
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "arc_height_m"] = arc_height
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "base_offset_m"] = base_offset
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "base_azimuth_deg"] = base_azimuth_angle
+            row_id = branch_id_to_row_id.get(branch_id, -1)
+            if row_id != -1:
+                branch_dataframe.at[row_id, "max_spread_m"] = max_spread
+                branch_dataframe.at[row_id, "azimuth_deg"] = azimuth_angle
+                branch_dataframe.at[row_id, "zenith_deg"] = zenith_angle
+                branch_dataframe.at[row_id, "chord_length_m"] = branch_chord_length
+                branch_dataframe.at[row_id, "arc_height_m"] = arc_height
+                branch_dataframe.at[row_id, "base_offset_m"] = base_offset
+                branch_dataframe.at[row_id, "base_azimuth_deg"] = base_azimuth_angle
         
         # Height difference & branching radius & branching angle & deflection angle of the branch tip & vertical deflection angle & tip_based_DINC & apex_based_DINC
         segmentwise_directions: np.ndarray = trunk.medial_points[1:] - trunk.medial_points[:-1]
@@ -571,9 +585,9 @@ class ParameterExtraction:
         segmentwise_vertical_offsets: np.ndarray = trunk.radii * np.sqrt(1 - np.clip(np.dot(segmentwise_directions, np.array([0., 0., 1.])) ** 2,  0., 1.))
         upper_bounds: np.ndarray = trunk.medial_points[:, 2] + segmentwise_vertical_offsets
         lower_bounds: np.ndarray = trunk.medial_points[:, 2] - segmentwise_vertical_offsets
-        self.tree_dataframe.loc[0, "height_difference_m"] = np.max(upper_bounds) - np.min(lower_bounds)
-        self.tree_dataframe.loc[0, "tip_based_DINC_m"] = tree_height - upper_bounds[-1] + z_min
-        self.tree_dataframe.loc[0, "apex_based_DINC_m"] = tree_height - np.max(upper_bounds) + z_min
+        tree_dataframe.at[0, "height_difference_m"] = np.max(upper_bounds) - np.min(lower_bounds)
+        tree_dataframe.at[0, "tip_based_DINC_m"] = tree_height - upper_bounds[-1] + z_min
+        tree_dataframe.at[0, "apex_based_DINC_m"] = tree_height - np.max(upper_bounds) + z_min
 
 
         for branch_id, branch in self._branch_id_to_branch.items():
@@ -591,7 +605,8 @@ class ParameterExtraction:
                 height_difference = np.max(upper_bounds) - np.min(lower_bounds)
             except Exception:
                 pass
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "height_difference_m"] = height_difference
+            row_id = branch_id_to_row_id[branch_id]
+            branch_dataframe.at[row_id, "height_difference_m"] = height_difference
 
             parent_branch: Branch = self._branch_id_to_branch[branch.parent_id]
             joint_point: np.ndarray = parent_branch.medial_points[branch.joint_point_idx]
@@ -635,13 +650,13 @@ class ParameterExtraction:
                 except Exception:
                     pass
 
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "branching_angle_deg"] = branching_angle
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "tip_deflection_angle_deg"] = tip_deflection_angle
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "branching_radius_m"] = branching_radius
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "vertical_deflection_angle_deg"] = vertical_deflection_angle
+            branch_dataframe.at[row_id, "branching_angle_deg"] = branching_angle
+            branch_dataframe.at[row_id, "tip_deflection_angle_deg"] = tip_deflection_angle
+            branch_dataframe.at[row_id, "branching_radius_m"] = branching_radius
+            branch_dataframe.at[row_id, "vertical_deflection_angle_deg"] = vertical_deflection_angle
 
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "tip_based_DINC_m"] = tree_height - upper_bounds[-1] + z_min
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "apex_based_DINC_m"] = tree_height - np.max(upper_bounds) + z_min
+            branch_dataframe.at[row_id, "tip_based_DINC_m"] = tree_height - upper_bounds[-1] + z_min
+            branch_dataframe.at[row_id, "apex_based_DINC_m"] = tree_height - np.max(upper_bounds) + z_min
         
         # Growth length, area, volume
         branch_id_to_growth_length: Dict[int, float] = {}
@@ -650,9 +665,10 @@ class ParameterExtraction:
         for branch_id, branch in self._branch_id_to_branch.items():
             if branch_id == 1:
                 continue
-            growth_length: float = self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "length_m"].item()
-            growth_area: float = self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "area_m2"].item()
-            growth_volume: float = self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "volume_L"].item()
+            row_id = branch_id_to_row_id[branch_id]
+            growth_length: float = branch_dataframe.at[row_id, "length_m"]
+            growth_area: float = branch_dataframe.at[row_id, "area_m2"]
+            growth_volume: float = branch_dataframe.at[row_id, "volume_L"]
             
             branch_id_to_growth_length[branch_id] = growth_length
             branch_id_to_growth_area[branch_id] = growth_area
@@ -665,9 +681,10 @@ class ParameterExtraction:
                 branch_id_to_growth_volume[ancestor_branch_id] += growth_volume
                 ancestor_branch_id = self._branch_id_to_branch[ancestor_branch_id].parent_id
         for branch_id, growth_length in branch_id_to_growth_length.items():
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "growth_length_m"] = growth_length
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "growth_area_m2"] = branch_id_to_growth_area[branch_id]
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "growth_volume_L"] = branch_id_to_growth_volume[branch_id]
+            row_id = branch_id_to_row_id[branch_id]
+            branch_dataframe.at[row_id, "growth_length_m"] = growth_length
+            branch_dataframe.at[row_id, "growth_area_m2"] = branch_id_to_growth_area[branch_id]
+            branch_dataframe.at[row_id, "growth_volume_L"] = branch_id_to_growth_volume[branch_id]
 
         # insertion_distance
         for branch_id, branch in self._branch_id_to_branch.items():
@@ -687,5 +704,6 @@ class ParameterExtraction:
                     pass
                 parent_branch_id: int = parent_branch.parent_id
                 joint_point_idx: int = parent_branch.joint_point_idx
-            self.branch_dataframe.loc[self.branch_dataframe["id"] == branch_id, "insertion_distance_m"] = insertion_distance
+            row_id = branch_id_to_row_id[branch_id]
+            branch_dataframe.at[row_id, "insertion_distance_m"] = insertion_distance
         return
