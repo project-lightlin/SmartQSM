@@ -6,7 +6,6 @@ import shutil
 
 def _update_requirements(root_dir: str):
     python_exe = sys.executable
-    pip_install_success = True
     req_file = os.path.join(root_dir, "requirements.txt")
     packages = ["-r", req_file]
 
@@ -14,7 +13,7 @@ def _update_requirements(root_dir: str):
         python_exe, "-m", "pip", "install", "-U", 
         "--no-cache-dir"
     ] + packages
-    
+
     subprocess.run(
         cmd,
         stdout=None,       
@@ -28,7 +27,7 @@ def _update_requirements(root_dir: str):
     print("\n--------------------------------------------------")
     print("Pip installation completed successfully!")
 
-    return pip_install_success
+    return 
 
 def run_post_install(root_dir: str):
     # Remove official useless files
@@ -43,9 +42,9 @@ def run_post_install(root_dir: str):
         "configs/spconv-contraction-SOME-LEAVES-cpu.yaml",
         "configs/spconv-contraction-SOME-LEAVES-cuda.yaml",
         "configs/spconv-contraction-MANY-LEAVES-cpu.yaml",
-        "configs/spconv-contraction-MANY-LEAVES-cuda.yaml"
+        "configs/spconv-contraction-MANY-LEAVES-cuda.yaml",
         "configs/layerwise-clustering-LEAFOFF.yaml",
-        "configs/layerwise-clustering-LEAFON.yaml"
+        "configs/layerwise-clustering-LEAFON.yaml",
         "core/core_algorithm_base.py",
         "core/segmentation_algorithms.py",
         "core/segmentation_based_skeletonization.py",
@@ -54,7 +53,7 @@ def run_post_install(root_dir: str):
         "core/thinning_based_skeletonization.py",
         "utils/evaluate_skeleton.py",
         "utils/loss_fn.py",
-        "utils/xlsx_io.py"
+        "utils/xlsx_io.py",
     ]
     for useless_file_path in useless_file_paths:
         try:
