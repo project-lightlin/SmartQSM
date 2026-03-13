@@ -18,7 +18,7 @@
 
 This method integrates multiple (reimplemented and improved) tree skeleton extraction algorithms including
 >
-> - :thumbsup: `spconv-contraction` *(Sparse-convolution-based point cloud contraction)* proposed by **[Yang et al. (2026)](https://doi.org/10.1016/j.isprsjprs.2026.01.011)** [:octocat:](https://github.com/project-lightlin/smartqsm) and inspired by [Dobbs et al.(2023)](https://doi.org/10.1007/978-3-031-36616-1_28) [:octocat:](https://github.com/uc-vision/smart-tree)
+> - :thumbsup: `spconv-contraction` *(Sparse-convolution-based point cloud contraction)* proposed by [Yang et al. (2026)](https://doi.org/10.1016/j.isprsjprs.2026.01.011) <sup>*This repo*</sup> and inspired by [Dobbs et al.(2023)](https://doi.org/10.1007/978-3-031-36616-1_28) [:octocat:](https://github.com/uc-vision/smart-tree)
 > - :thumbsup: `layerwise-clustering` proposed by [Xu et al. (2007)](https://doi.org/10.1145/1289603.1289610) and inspired by [Yang et al. (2024)](https://doi.org/10.1002/rse2.399) [:octocat:](https://github.com/wanxinyang/treegraph)
 >
 > **From Ver 2.0:**
