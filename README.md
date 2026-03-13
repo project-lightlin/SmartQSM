@@ -168,7 +168,7 @@ Use an Excel worksheet containing tree name, X coordinate, Y coordinate, tree he
 
 The program automatically checks for updates at each run and calls Git to implement updates when there are updates. Please install [Git](https://git-scm.com/) properly. If Git fails to clone the repository, you may need to set up a proxy. Please check the sample configuration in `entrypoints/git_config_sample.txt`. Copy this file and rename it to `git_config.txt` in the same directory for the configuration. Remove the `#` at the beginning of the line to make the modified argument activate.
 
-If automatic upgrades always fail, **especially when the version is <= 1.6.0**, try replacing `entrypoints/_updater.py` with the latest version in the repo.
+If automatic upgrades always fail, **especially when the version is < 2.0.4**, try replacing `entrypoints/_updater.py` with the latest version in the repo.
 
 ## :warning: Known Bugs
 
