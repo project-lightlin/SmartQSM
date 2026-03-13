@@ -38,7 +38,7 @@ and supports the extraction of [82 multiscale parameters (Click here to view det
 
 :smile: We are truly honored that SmartQSM was featured on [CCTV News Channel's "Morning News" (Click here to watch the report)](https://tv.cctv.com/2026/02/23/VIDEENOqOEryLSemunBIe6Cs260223.shtml)!
 
-![挂牌保护、智能监测 古树名木在数智化时代焕发新生](https://github.com/project-lightlin/misc/blob/main/img/smartqsm-on-cctv13.jpg?raw=true)
+<center><img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-on-cctv13.jpg?raw=true" alt="挂牌保护、智能监测 古树名木在数智化时代焕发新生" width="640" height="360"></center>
 
 ## :star2: Star History
 
