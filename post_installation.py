@@ -2,6 +2,7 @@ import os
 import subprocess
 import traceback
 import sys
+import shutil
 
 def _update_requirements(root_dir: str):
     python_exe = sys.executable
@@ -68,7 +69,7 @@ def run_post_install(root_dir: str):
     
     for useless_dir in useless_directories:
         try:
-            os.rmdir(os.path.join(root_dir, useless_dir))
+            shutil.rmtree(os.path.join(root_dir, useless_dir))
         except FileNotFoundError:
             pass
         

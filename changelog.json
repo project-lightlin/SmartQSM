@@ -1,10 +1,28 @@
 {
     "releases": [
-        
+        {
+            "version": "2.0.1",
+            "codename": "Ginkgo",
+            "released": "2026/03/13",
+            "changelog": [
+                {
+                    "title": "Fix the post installation bug.",
+                    "released": "2026/03/13",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
         {
             "version": "2.0.0",
             "codename": "Ginkgo",
-            "released": "2026/03/21",
+            "released": "2026/03/13",
             "changelog": [
                 {
                     "title": "<i>Density adaptation</i> has been officially enabled to support the processing of sparse (airborne) individual tree point clouds.",
