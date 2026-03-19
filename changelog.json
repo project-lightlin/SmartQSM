@@ -1,15 +1,34 @@
 {
     "releases": [
         {
+            "version": "2.0.6",
+            "codename": "Ginkgo",
+            "released": "2026/03/19",
+            "changelog": [
+                {
+                    "title": "Adjusted the judgment of branch level to avoid excessive reliance on radius or WPL.",
+                    "released": "2026/03/19",
+                    "label": "Changed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.5",
             "codename": "Ginkgo",
             "released": "2026/03/19",
             "changelog": [
                 {
-                    "title": "Fix the crash error of parameter_exporter.py",
+                    "title": "Fixed the crash error of parameter_exporter.py",
                     "released": "2026/03/19",
                     "label": "Fixed",
-                    "module": "",
+                    "module": "entrypoints.parameter_exporter",
                     "language": "en",
                     "author": "YANG Jie",
                     "description_group": [

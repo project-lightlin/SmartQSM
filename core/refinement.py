@@ -60,6 +60,7 @@ class Refinement(Pipeline):
     _lam_intercept_tuning_fn: Optional[Callable[[float, float, float, float], float]]
     _min_num_credible_samples: Optional[int]
     _making_twigs_thinner: Optional[bool]
+    _node_weight_fn: Optional[Callable[[float, float, float, float], float]]
 
     _z_min: Optional[float]
     _tree_height: Optional[float]
@@ -101,6 +102,7 @@ class Refinement(Pipeline):
         self._lam_intercept_tuning_fn = None
         self._min_num_credible_samples = None
         self._making_twigs_thinner = None
+        self._node_weight_fn = None
 
         self._z_min = None
         self._tree_height = None
@@ -154,7 +156,8 @@ class Refinement(Pipeline):
             lam_intercept_maxval: float = 100.0,
             lam_intercept_tuning_function: Optional[Callable[[float, float, float, float], float]] = lambda wpl, wpl_max, lam_lb, lam_ub: (lam_lb / lam_ub) ** (np.log(wpl + 1.0) / np.log(wpl_max + 1.0)) * lam_ub,
             min_num_credible_samples: int = 5,
-            making_twigs_thinner: bool = True
+            making_twigs_thinner: bool = True,
+            node_weight_function: Union[Callable[[float, float, float, float], float], str] = lambda wpl, wpl_pred, r, r_pred: np.log(wpl + 1.0) / np.log(wpl_pred + 1.0) + r / r_pred,
     ) -> None:
         if min_radius <= 0.:
             raise ValueError("min_radius must be > 0.")
@@ -209,6 +212,11 @@ class Refinement(Pipeline):
         self._min_num_credible_samples = min_num_credible_samples
         self._making_twigs_thinner = making_twigs_thinner
 
+        if callable(node_weight_function):
+            self._node_weight_fn = node_weight_function
+        else:
+            self._node_weight_fn = eval(node_weight_function)
+
         super()._clear_pipeline()
         super()._add_fns_to_pipeline(len(self._pipeline), [
             self._partition_paths,
@@ -224,7 +232,7 @@ class Refinement(Pipeline):
         ])
         if not self._using_allometric_equation:
             super()._add_fns_to_pipeline(len(self._pipeline), [
-                self._regenerate_branches_by_thickness,
+                self._generate_final_branches,
             ])
         super()._add_fns_to_pipeline(len(self._pipeline), [
             self._smooth_pathwise,
@@ -829,14 +837,20 @@ class Refinement(Pipeline):
 
         return f"Estimated the radii (max={np.max(self._radii):.4f}).", mesh
 
-    def _regenerate_branches_by_thickness(self):
-        node_to_radius: Dict[int, float] = {}
+    def _generate_final_branches(self):
+        node_to_weight: Dict[int, float] = {}
         for i, radius in enumerate(self._radii):
-            node_to_radius[i] = radius
+            weight: float = 0.0
+            if self._skeleton.has_node(i):
+                for predecessor in self._skeleton.predecessors(i):
+                    weight = self._node_weight_fn(self._wpls[i], self._wpls[predecessor], radius, self._radii[predecessor])
+                    break
+            node_to_weight[i] = weight
+        #Directly judging based on single factor is prone to deviation
 
         paths = GreedyPathPartitioning(
             self._skeleton, 
-            node_to_radius, 
+            node_to_weight, 
             maximized=True
         ).get_paths()
 

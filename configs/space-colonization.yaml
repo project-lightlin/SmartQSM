@@ -49,6 +49,7 @@ refinement:
   lam_intercept_tuning_function: "lambda wpl, wpl_max, lam_lb, lam_ub: (lam_lb / lam_ub) ** (np.log(wpl + 1.0) / np.log(wpl_max + 1.0)) * lam_ub"
   min_num_credible_samples: 5
   making_twigs_thinner: True
+  node_weight_function: "lambda wpl, wpl_pred, r, r_pred: np.log(wpl + 1.0) / np.log(wpl_pred + 1.0) + r / r_pred"
 modeling:
   num_sectional_vertices: 20
   using_furcation_optimization: True
