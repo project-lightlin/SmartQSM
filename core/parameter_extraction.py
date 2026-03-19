@@ -29,6 +29,12 @@ from shapely.geometry import Point, Polygon
 from shapely.ops import nearest_points
 from sklearn.neighbors import LocalOutlierFactor
 
+def _calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
+    v1 = normalize(v1)
+    v2 = normalize(v2)
+    angle = calculate_angle_between_vectors(v1, v2)
+    return angle if angle != np.nan else 0.0
+
 def _sample_polyline(points, max_radius, step):
     points = np.asarray(points)
     if len(points) == 0:
@@ -542,7 +548,7 @@ class ParameterExtraction:
         trunk_chord_length: float = np.linalg.norm(trunk_displacement)
         tree_dataframe.at[0, "max_spread_m"] = np.linalg.norm(trunk.medial_points[1:, :2] - trunk.medial_points[0, :2], axis=-1).max()
         tree_dataframe.at[0, "azimuth_deg"] = calculate_heading_angle(trunk_displacement[:2]) 
-        tree_dataframe.at[0, "zenith_deg"] = calculate_angle_between_vectors(
+        tree_dataframe.at[0, "zenith_deg"] = _calculate_angle_between_vectors(
             np.array([0., 0., 1.]), normalize(trunk_displacement)
         )
         tree_dataframe.at[0, "chord_length_m"] = trunk_chord_length
@@ -559,7 +565,7 @@ class ParameterExtraction:
                 branch_displacement: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_idx]
                 branch_chord_length = np.linalg.norm(branch_displacement)
                 azimuth_angle = calculate_heading_angle(branch_displacement[:2]) 
-                zenith_angle = calculate_angle_between_vectors(
+                zenith_angle = _calculate_angle_between_vectors(
                     np.array([0., 0., 1.]), normalize(branch_displacement)
                 )
                 arc_height = np.max(calculate_distances_from_points_to_line(branch.medial_points, branch.medial_points[branch.active_medial_point_start_idx], branch.medial_points[-1]))
@@ -630,10 +636,10 @@ class ParameterExtraction:
             vertical_deflection_angle: float = 0.
             if np.linalg.norm(parent_local_branch_direction) != 0.:
                 if np.linalg.norm(current_local_branch_direction) != 0.:
-                    branching_angle = calculate_angle_between_vectors(
+                    branching_angle = _calculate_angle_between_vectors(
                         parent_local_branch_direction, current_local_branch_direction
                     )
-                    vertical_deflection_angle = calculate_angle_between_vectors(
+                    vertical_deflection_angle = _calculate_angle_between_vectors(
                         np.array([0., 0., 1.]), current_local_branch_direction
                     )
 
@@ -641,7 +647,7 @@ class ParameterExtraction:
                     arc_direction: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_idx]
                     if np.linalg.norm(arc_direction) != 0.:
                         arc_direction /= np.linalg.norm(arc_direction)
-                        tip_deflection_angle = calculate_angle_between_vectors(
+                        tip_deflection_angle = _calculate_angle_between_vectors(
                             parent_local_branch_direction, arc_direction
                         )
                     branching_radius = np.max(

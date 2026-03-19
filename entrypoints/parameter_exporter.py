@@ -230,6 +230,14 @@ class App:
         language = ""
         if language_list_idx:
             language = self._language_list_box.get(language_list_idx[0])
+        
+        for sheet_name, dataframe in sheet_name_to_dataframe.items():
+            dataframe_processed = dataframe.fillna({'__index__': '=NA()'}).replace(
+                [np.inf, -np.inf], np.nan
+            )
+            for col in dataframe_processed.columns:
+                dataframe[col] = dataframe[col].apply(lambda x: '=NA()' if pd.isna(x) else x)
+
         try:
             with xlsxwriter.Workbook(path) as workbook:
                 for i, (sheet_name, dataframe) in enumerate(sheet_name_to_dataframe.items()):

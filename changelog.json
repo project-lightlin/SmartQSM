@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.0.5",
+            "codename": "Ginkgo",
+            "released": "2026/03/19",
+            "changelog": [
+                {
+                    "title": "Fix the crash error of parameter_exporter.py",
+                    "released": "2026/03/19",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.4",
             "codename": "Ginkgo",
             "released": "2026/03/13",
