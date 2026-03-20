@@ -30,9 +30,7 @@ from shapely.ops import nearest_points
 from sklearn.neighbors import LocalOutlierFactor
 
 def _calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
-    v1 = normalize(v1)
-    v2 = normalize(v2)
-    angle = calculate_angle_between_vectors(v1, v2)
+    angle: float = calculate_angle_between_vectors(v1, v2)
     return angle if angle != np.nan else 0.0
 
 def _sample_polyline(points, max_radius, step):

@@ -1,5 +1,7 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
+Latest version **2.0.7** released on 2026/03/20. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+
 ----------- 
 
 **SmartQSM** is a quantitative structure model for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
@@ -9,7 +11,9 @@
 > This project is under long-term maintenance.
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author (see below) and we will review it as soon as possible!
-
+>
+> For technical reasons, early versions (<=2.0.7) underwent many changes. We apologize for any inconvenience  any inconvenience this may have caused.
+>
 ## :smiley: First Impression
 
 | Real-time processing and displaying | Interactive architectural analysis |

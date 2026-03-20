@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.0.7",
+            "codename": "Ginkgo",
+            "released": "2026/03/20",
+            "changelog": [
+                {
+                    "title": "Fixed an unnecessary calculation to improve efficiency.",
+                    "released": "2026/03/20",
+                    "label": "Changed",
+                    "module": "core.parameter_extraction",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.6",
             "codename": "Ginkgo",
             "released": "2026/03/19",
@@ -28,7 +47,7 @@
                     "title": "Fixed the crash error of parameter_exporter.py",
                     "released": "2026/03/19",
                     "label": "Fixed",
-                    "module": "entrypoints.parameter_exporter",
+                    "module": "{entrypoints.parameter_exporter, core.parameter_extraction}",
                     "language": "en",
                     "author": "YANG Jie",
                     "description_group": [
