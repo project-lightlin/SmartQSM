@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.0.8",
+            "codename": "Ginkgo",
+            "released": "2026/03/23",
+            "changelog": [
+                {
+                    "title": "Add exception handling for the import of SpconvBasedContraction to improve program compatibility. When required deep learning dependencies are not met, only a warning is issued while other functions of the program remain operational.",
+                    "released": "2026/03/23",
+                    "label": "Fixed",
+                    "module": "core.core_algorithms.spconv_based_contraction.py",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.7",
             "codename": "Ginkgo",
             "released": "2026/03/20",
@@ -8,7 +27,7 @@
                 {
                     "title": "Fixed an unnecessary calculation to improve efficiency.",
                     "released": "2026/03/20",
-                    "label": "Changed",
+                    "label": "Fixed",
                     "module": "core.parameter_extraction",
                     "language": "en",
                     "author": "YANG Jie",

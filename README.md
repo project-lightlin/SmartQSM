@@ -1,6 +1,6 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
-Latest version **2.0.7** released on 2026/03/20. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+Latest version **2.0.8** released on 2026/03/23. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
 
 ----------- 
 
@@ -71,7 +71,7 @@ To report any (possible) abuse or infringement behavior, please contact [yangtd@
 
 This repo has been verified and tested on Windows 10/11. Linux has not been tested.
 
-1. Please refer to [how-to-install-python-and-deep-learning-libraries](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html) to prepare the virtual environment.
+1. Please refer to [how-to-install-python-and-deep-learning-libraries](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html) to prepare the virtual environment. If your computer does not meet the requirements for installing deep learning libraries, you can still proceed with this tutorial after simply setting up a Python virtual environment. Only some features will be limited (e.g., spconv-based-contraction will be unavailable), and the program will prompt relevant information; all other features will function normally.
 
 2. Install [Git](https://git-scm.com/) and clone the repo into the specified [working directory](https://project-lightlingithubio.readthedocs.io/en/latest/how-to-install-python-and-deep-learning-libraries.html#working-directory) using:
 

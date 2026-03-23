@@ -21,10 +21,15 @@ from typing import Optional, Tuple, List, Any
 import numpy as np
 import open3d as o3d
 import os
-import external.SmartTreeXX
-from external.SmartTreeXX.models.smart_tree_xx import SmartTreeXX
-from external.SmartTreeXX.datasets.synthetic_tree import SingleTreeDataset, collate_synthetic_tree
-import torch
+try:
+    import external.SmartTreeXX
+    from external.SmartTreeXX.models.smart_tree_xx import SmartTreeXX
+    from external.SmartTreeXX.datasets.synthetic_tree import SingleTreeDataset, collate_synthetic_tree
+    import torch
+except Exception:
+    import traceback
+    traceback.print_exc()
+    print("\033[33m[Warning] SpconvBasedContraction is temporarily unavailable due to the error mentioned above. Only programs explicitly calling it may crash.\033[0m")
 
 class SpconvBasedContraction(CoreAlgorithmBase):
     # input
@@ -77,8 +82,6 @@ class SpconvBasedContraction(CoreAlgorithmBase):
             self._contracted_points = np.copy(self._points).astype(np.float32)
             self._displacements = np.zeros_like(self._points).astype(np.float32)
         
-        
-        import torch
         dataset: SingleTreeDataset = SingleTreeDataset(
             np.concatenate((self._contracted_points, self._displacements), axis=1),
             cube_size=self._cube_size,
@@ -142,4 +145,7 @@ class SpconvBasedContraction(CoreAlgorithmBase):
         ] * self._max_iteration
     
     def output(self):
-        return {"contracted_points": self._contracted_points, "displacements": self._displacements}
+        return {
+            "contracted_points": self._contracted_points, 
+            "displacements": self._displacements
+        }
