@@ -1,6 +1,61 @@
 {
     "releases": [
         {
+            "version": "2.1.0",
+            "codename": "Ginkgo",
+            "released": "2026/04/02",
+            "changelog": [
+                {
+                    "title": "Corrected logical errors in the Space Colonization code.",
+                    "released": "2026/04/02",
+                    "label": "Fixed",
+                    "module": "core.core_algorithms.space_colonization",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Clustering algorithms are managed modularly now.",
+                    "released": "2026/04/02",
+                    "label": "Changed",
+                    "module": "utils.clustering",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "The number of cross-sectional vertices is mandatory to be recorded in QSM for secondary development.",
+                    "released": "2026/04/02",
+                    "label": "Changed",
+                    "module": "core.parameterize_and_export",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Unified the chaotic mixing of radians and degrees in the source code.",
+                    "released": "2026/04/02",
+                    "label": "Fixed",
+                    "module": "core.parameter_extraction",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.0.8",
             "codename": "Ginkgo",
             "released": "2026/03/23",
@@ -9,7 +64,7 @@
                     "title": "Add exception handling for the import of SpconvBasedContraction to improve program compatibility. When required deep learning dependencies are not met, only a warning is issued while other functions of the program remain operational.",
                     "released": "2026/03/23",
                     "label": "Fixed",
-                    "module": "core.core_algorithms.spconv_based_contraction.py",
+                    "module": "core.core_algorithms.spconv_based_contraction",
                     "language": "en",
                     "author": "YANG Jie",
                     "description_group": [

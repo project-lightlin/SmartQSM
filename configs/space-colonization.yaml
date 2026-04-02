@@ -16,7 +16,7 @@ skeletonization:
     max_stride: ~
     rough_height_diameter_ratio: 100
     stride_function: "lambda x, lb, ub: lb + x * (ub - lb)"
-    max_angle: 90.0
+    _max_angle_: np.deg2rad(90)
     max_num_branches: 2
   radius_estimator: cylinder_fitting
   radius_estimator_kwargs:
@@ -31,7 +31,7 @@ refinement:
   min_radius_weight: !!float 1.0e-6
   x0_on_gamma_pdf: ~
   y0_on_gamma_pdf: ~
-  wpl_based_correction_fn_for_radius_weights: "lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0))"
+  wpl_based_correction_function_for_radius_weights: "lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0))"
   min_radius: !!float 1.0e-3
   occupancy_factor_or_buffer: 1.1
   smoother_kwargs:

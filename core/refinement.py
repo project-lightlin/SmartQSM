@@ -139,7 +139,7 @@ class Refinement(Pipeline):
             min_radius_weight: float = 1.0e-6,
             x0_on_gamma_pdf: Optional[float] = None,
             y0_on_gamma_pdf: Optional[float] = None,
-            wpl_based_correction_fn_for_radius_weights: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], str] = lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0)),
+            wpl_based_correction_function_for_radius_weights: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], str] = lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0)),
             min_radius: float = 1.0e-3,
             occupancy_factor_or_buffer: float = 1.1,
             smoother_kwargs: Optional[Dict[str, Any]] = {},
@@ -178,10 +178,10 @@ class Refinement(Pipeline):
             raise ValueError("min_radius_weight must be > 0.")
         self._min_radius_weight = min_radius_weight
 
-        if callable(wpl_based_correction_fn_for_radius_weights):
-            self._wpl_based_correction_fn_for_radius_weights = wpl_based_correction_fn_for_radius_weights
+        if callable(wpl_based_correction_function_for_radius_weights):
+            self._wpl_based_correction_fn_for_radius_weights = wpl_based_correction_function_for_radius_weights
         else:
-            self._wpl_based_correction_fn_for_radius_weights = eval(wpl_based_correction_fn_for_radius_weights)
+            self._wpl_based_correction_fn_for_radius_weights = eval(wpl_based_correction_function_for_radius_weights)
 
         self._x0_on_gamma_pdf = x0_on_gamma_pdf
         self._y0_on_gamma_pdf = y0_on_gamma_pdf

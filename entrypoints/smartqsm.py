@@ -26,7 +26,6 @@ import argparse
 import sys
 import open3d.visualization.rendering as rendering
 import traceback
-import yaml
 from utils.io3d import read_point_cloud
 from datetime import datetime, timedelta
 import time
@@ -40,6 +39,7 @@ from core.modeling import Modeling
 from core.parameterize_and_export import parameterize_and_export
 import psutil
 from scipy.spatial import KDTree
+from utils.yaml_extra import safe_load
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -572,12 +572,9 @@ class Open3DApp:
     def load_or_update_smartqsm_config(new_config_path: str, current_config: Optional[Dict[str, Any]] = None):
         new_config: Dict[str, Any] = current_config.copy() if current_config else {}
         with open(new_config_path, "r") as f:
-            config: Dict[str, Any] = yaml.safe_load(f)
+            config: Dict[str, Any] = safe_load(f)
             new_config.update(config)
-        # Check
-        new_config["skeletonization"]
-        new_config["refinement"]
-        new_config["modeling"]
+        
         return new_config
 
     def start(self):
@@ -749,7 +746,10 @@ class Open3DApp:
 
                         branch_id_to_branch = e.value
                         break
-                    
+
+                if "num_sectional_vertices" not in config["modeling"]:
+                    config["modeling"]["num_sectional_vertices"] = 20
+
                 modeling = Modeling(
                     verbose=self._scene_widget is not None,
                 )
@@ -786,7 +786,9 @@ class Open3DApp:
                     points,
                     path_without_extension,
                     global_shift,
-                    projection
+                    projection,
+                    parameter_extraction_kwargs=config.get("parameter_extraction", {}),
+                    num_sectional_vertices=config["modeling"]["num_sectional_vertices"]
                 )
 
                 self._current_progress = 1.
@@ -960,10 +962,14 @@ def process_in_terminal(
                     branch_id_to_branch = e.value
                     break
             
+            if "num_sectional_vertices" not in config["modeling"]:
+                config["modeling"]["num_sectional_vertices"] = 20
+
             modeling = Modeling(
                 verbose=False,
             )
             modeling.set_params(**config["modeling"])
+
             generator = modeling.run(branch_id_to_branch)
 
             print("Modeling...")
@@ -988,7 +994,8 @@ def process_in_terminal(
                 path_without_extension,
                 global_shift,
                 projection,
-                **config.get("parameter_extraction", {})
+                parameter_extraction_kwargs=config.get("parameter_extraction", {}),
+                num_sectional_vertices = config["modeling"]["num_sectional_vertices"]
             )
 
             print("Done.")

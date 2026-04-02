@@ -24,6 +24,7 @@ import open3d as o3d
 from utils.get_distinct_colors import get_distinct_colors
 from utils.networkx_extra import construct_rough_geodetic_graph_3d, MaxDepth
 from collections import deque, defaultdict
+from utils.clustering import Clustering
 
 class LayerwiseClustering(CoreAlgorithmBase):
     # input
@@ -55,8 +56,8 @@ class LayerwiseClustering(CoreAlgorithmBase):
             stride_function: Union[Callable[[float, float, float], float], str] = lambda x, lb, ub: lb + x * (ub - lb),
             cross_layer_cluster_spacing: float = 0.04,
             flexible: bool = False,
-            cluster_algorithm: str = "dbscan", 
-            cluster_algorithm_kwargs: Dict[str, float] = {},
+            clustering_algorithm: str = "dbscan", 
+            clustering_algorithm_kwargs: Dict[str, float] = {},
             min_cluster_size: int = 5
     ) -> None:
         super().__init__(verbose=verbose)
@@ -76,7 +77,7 @@ class LayerwiseClustering(CoreAlgorithmBase):
             
         self._clear()
 
-        self._initialize_cluster_algorithm(cluster_algorithm, cluster_algorithm_kwargs )
+        self._clustering = Clustering(clustering_algorithm, **clustering_algorithm_kwargs)
         return
     
     def _clear(self) -> None:
@@ -89,22 +90,7 @@ class LayerwiseClustering(CoreAlgorithmBase):
             self._construct_geodetic_graph,
             self._layer_flexibly if self._flexible else self._layer_inflexibly
         ]
-    
-    def _initialize_cluster_algorithm(self, cluster_algorithm: str, cluster_algorithm_kwargs: Dict[str, Any]) -> None:
-        builtin_fn: Callable[[np.ndarray, Any], List[np.ndarray]]
-        if cluster_algorithm == "dbscan":
-            o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
-            def builtin_fn(points: np.ndarray, eps: float = 0.04, min_points: int = 5):
-                cloud: o3d.geometry.PointCloud = o3d.geometry.PointCloud()
-                cloud.points = o3d.utility.Vector3dVector(points)
-                labels: np.ndarray = np.asarray(cloud.cluster_dbscan(eps=eps, min_points=min_points))
-                return [np.where(labels == label)[0] for label in np.unique(labels) if label != -1]
-        else:
-            raise NotImplementedError(f"Cluster algorithm {cluster_algorithm} is not implemented.")
-        self._clustering = lambda points, kwargs=cluster_algorithm_kwargs: builtin_fn(points, **kwargs)
-        return
 
-    
     def _construct_geodetic_graph(self) -> Optional[Tuple[str, o3d.geometry.LineSet]]:
         self._geodetic_graph, self._shortest_distances, _ = construct_rough_geodetic_graph_3d(self._points, max_patch_size=self._max_patch_size, neighborhood_size=self._neighborhood_size)
         

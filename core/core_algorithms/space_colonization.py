@@ -22,15 +22,15 @@ from .core_algorithm_base import CoreAlgorithmBase
 from scipy.spatial import cKDTree
 from utils.networkx_extra import construct_rough_geodetic_graph_3d, MaxDepth
 import open3d as o3d
-
 import sys
 sys.setrecursionlimit(np.iinfo(np.int32).max)
+from utils.numpy_extra import normalize
 
 # Improved efficiency through GPT 5.2
 class _Node:
     coords: np.ndarray
     previous_direction: np.ndarray
-    childrens: List[np.ndarray]
+    children: List["_Node"]
     attracted_points: np.ndarray          # point ids for this iteration (np array)
     allowing_attraction: bool
     cluster: List[int]                   # accumulated point ids
@@ -39,7 +39,7 @@ class _Node:
     def __init__(self, coords: np.ndarray, previous_direction: np.ndarray, stride: float) -> None:
         self.coords = coords
         self.previous_direction = previous_direction
-        self.childrens = []
+        self.children = []
         self.attracted_points = np.empty((0,), dtype=np.int64)
         self.allowing_attraction = True
         self.cluster = []
@@ -58,32 +58,28 @@ class _Node:
             self.allowing_attraction = False
             return None
 
-        vecs = points[ids] - self.coords  # (k,3)
-        norms = np.linalg.norm(vecs, axis=1)
-        valid = norms > 0
-        if not np.any(valid):
-            self.allowing_attraction = False
-            self.attracted_points = np.empty((0,), dtype=np.int64)
-            return None
-
-        vecs = vecs[valid] / norms[valid][:, None]
-        dots = np.clip(vecs @ self.previous_direction, -1.0, 1.0)
+        directions = normalize(points[ids] - self.coords)
+        dots = np.clip(directions @ self.previous_direction, -1.0, 1.0)
         angles = np.arccos(dots)
-        ang_ok = angles <= max_angle
-        if not np.any(ang_ok):
+        valid_angle_indices = np.where(angles <= max_angle)[0]
+        
+        if valid_angle_indices.size == 0:
             self.allowing_attraction = False
             self.attracted_points = np.empty((0,), dtype=np.int64)
             return None
+        
+        self.attracted_points = self.attracted_points[valid_angle_indices]
 
-        accumulated_direction = vecs[ang_ok].mean(axis=0)
-        new_coords = self.coords + step_size * accumulated_direction
+        direction = normalize(directions[valid_angle_indices].mean(axis=0))
+        new_coords = self.coords + step_size * direction
 
-        self.childrens.append(new_coords)
+        new_node: _Node = _Node(new_coords, direction, step_size)
+        self.children.append(new_node)
         self.attracted_points = np.empty((0,), dtype=np.int64)
-        if len(self.childrens) >= max_num_branches:
+        if len(self.children) >= max_num_branches:
             self.allowing_attraction = False
 
-        return _Node(new_coords, accumulated_direction, step_size)
+        return new_node
 
 
 class SpaceColonization(CoreAlgorithmBase):
@@ -118,7 +114,7 @@ class SpaceColonization(CoreAlgorithmBase):
             max_stride: Optional[float] = None,
             stride_function: Union[Callable[[float, float, float], float], str] = lambda x, lb, ub: lb + x * (ub - lb),
             rough_height_diameter_ratio: float = 100, 
-            max_angle: float = 90, 
+            max_angle: float = np.pi / 2, 
             max_num_branches: int = 2
     ) -> None:
         self._verbose = verbose
@@ -214,6 +210,7 @@ class SpaceColonization(CoreAlgorithmBase):
             # active nodes indices this iteration
             active_idx = np.fromiter((i for i, nd in enumerate(nodes) if nd.allowing_attraction),
                                      dtype=np.int64)
+
             if active_idx.size == 0:
                 break
             

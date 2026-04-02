@@ -34,7 +34,7 @@ class StandStructure:
             heights: Union[np.ndarray, List[float]], 
             crown_widths: Union[np.ndarray, List[float]], 
             unit_size: int = 4,
-            standard_angle: float = 72
+            standard_angle: float = np.pi / 180 * 72
     ):
         assert len(x) == len(y) == len(names) == len(species) == len(dbhs) == len(heights) == len(crown_widths), "Inconsistent dimensions"
         assert len(x) >= 5, "At least 5 trees are required"
@@ -131,7 +131,7 @@ class StandStructure:
                 direction_ij1 /= np.linalg.norm(direction_ij1)
                 direction_ij2 = self._points[j2] - self._points[i]
                 direction_ij2 /= np.linalg.norm(direction_ij2)
-                angle = np.arccos(np.dot(direction_ij1, direction_ij2)) / np.pi * 180
+                angle = np.arccos(np.dot(direction_ij1, direction_ij2))
                 if angle < self._standard_angle:
                     uniform_angle_indices[i] += 1.
             uniform_angle_indices[i] /= float(self.unit_size)

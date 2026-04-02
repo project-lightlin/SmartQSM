@@ -484,20 +484,20 @@ class ParameterExtraction:
         tree_dataframe.at[0, "north_south_crown_width_m"] = crown_projection_points[:, 1].max() - crown_projection_points[:, 1].min()
         
         angle_count = int(180. / self._degree_resolution)
-        angles = np.arange(angle_count, dtype=np.float64) * self._degree_resolution
-        angle_radians = np.deg2rad(angles)
-        directions = np.stack([np.cos(angle_radians), np.sin(angle_radians)], axis=1)
+        angles_in_degrees =  np.arange(angle_count, dtype=np.float64) * self._degree_resolution
+        angles = np.deg2rad(angles_in_degrees)
+        directions = np.stack([np.cos(angles), np.sin(angles)], axis=1)
         all_projections: np.ndarray = (crown_projection_points - crown_center) @ directions.T
         crown_widths: np.ndarray = all_projections.max(axis=0) - all_projections.min(axis=0)
-        width_azimuths: np.ndarray = np.where(angles <= 90., 90. - angles, 270. - angles)
+        azimuths_of_crown_widths_in_degrees: np.ndarray = np.where(angles_in_degrees <= 90., 90. - angles_in_degrees, 270. - angles_in_degrees)
 
         min_crown_width_idx = int(np.argmin(crown_widths))
         max_crown_width_idx = int(np.argmax(crown_widths))
         tree_dataframe.at[0, "min_crown_width_m"] = crown_widths[min_crown_width_idx]
-        tree_dataframe.at[0, "azimuth_of_min_crown_width_deg"] = width_azimuths[min_crown_width_idx]
+        tree_dataframe.at[0, "azimuth_of_min_crown_width_deg"] = azimuths_of_crown_widths_in_degrees[min_crown_width_idx]
         tree_dataframe.at[0, "mean_crown_width_m"] = crown_widths.mean()
         tree_dataframe.at[0, "max_crown_width_m"] = crown_widths[max_crown_width_idx]
-        tree_dataframe.at[0, "azimuth_of_max_crown_width_deg"] = width_azimuths[max_crown_width_idx]
+        tree_dataframe.at[0, "azimuth_of_max_crown_width_deg"] = azimuths_of_crown_widths_in_degrees[max_crown_width_idx]
         
         # Crown radius
         intervalwise_crown_radii: np.ndarray = np.zeros(36, dtype=np.float32)
@@ -532,23 +532,23 @@ class ParameterExtraction:
         tree_position_point: Point = Point(tree_position)
         crown_center_coordinate_offsets: np.ndarray = crown_center - tree_position
         tree_dataframe.at[0, "crown_center_offset_m"] = np.linalg.norm(crown_center_coordinate_offsets)
-        tree_dataframe.at[0, "crown_center_azimuth_deg"] = calculate_heading_angle(crown_center_coordinate_offsets)
+        tree_dataframe.at[0, "crown_center_azimuth_deg"] = np.rad2deg(calculate_heading_angle(crown_center_coordinate_offsets))
         nearest_crown_boundary_point: Point = nearest_points(tree_position_point, crown_projection_convex_polygon.boundary)[1]
         tree_dataframe.at[0, "min_crown_spread_m"] = tree_position_point.distance(nearest_crown_boundary_point)
-        tree_dataframe.at[0, "azimuth_of_min_crown_spread_deg"] = calculate_heading_angle(np.array([nearest_crown_boundary_point.x - tree_position_point.x, nearest_crown_boundary_point.y - tree_position_point.y]))
+        tree_dataframe.at[0, "azimuth_of_min_crown_spread_deg"] = np.rad2deg(calculate_heading_angle(np.array([nearest_crown_boundary_point.x - tree_position_point.x, nearest_crown_boundary_point.y - tree_position_point.y])))
         centrifugal_distances_to_crown_projection_convex_polygon_vertices: np.ndarray = np.linalg.norm(crown_projection_convex_polygon_vertices - tree_position, axis=1)
         farthest_crown_projection_convex_polygon_vertex_id: int = np.argmax(centrifugal_distances_to_crown_projection_convex_polygon_vertices)
         tree_dataframe.at[0, "max_crown_spread_m"] = centrifugal_distances_to_crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id]
-        tree_dataframe.at[0, "azimuth_of_max_crown_spread_deg"] = calculate_heading_angle(crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id] - tree_position) 
+        tree_dataframe.at[0, "azimuth_of_max_crown_spread_deg"] = np.rad2deg(calculate_heading_angle(crown_projection_convex_polygon_vertices[farthest_crown_projection_convex_polygon_vertex_id] - tree_position)) 
 
         # Azimuth & zenith & max horizontal extension & chord length & arc height
         trunk_displacement: np.ndarray = trunk.medial_points[-1] - trunk.medial_points[0]
         trunk_chord_length: float = np.linalg.norm(trunk_displacement)
         tree_dataframe.at[0, "max_spread_m"] = np.linalg.norm(trunk.medial_points[1:, :2] - trunk.medial_points[0, :2], axis=-1).max()
-        tree_dataframe.at[0, "azimuth_deg"] = calculate_heading_angle(trunk_displacement[:2]) 
-        tree_dataframe.at[0, "zenith_deg"] = _calculate_angle_between_vectors(
+        tree_dataframe.at[0, "azimuth_deg"] = np.rad2deg(calculate_heading_angle(trunk_displacement[:2])) 
+        tree_dataframe.at[0, "zenith_deg"] = np.rad2deg(_calculate_angle_between_vectors(
             np.array([0., 0., 1.]), normalize(trunk_displacement)
-        )
+        ))
         tree_dataframe.at[0, "chord_length_m"] = trunk_chord_length
         tree_dataframe.at[0, "arc_height_m"] = np.max(calculate_distances_from_points_to_line(trunk.medial_points, trunk.medial_points[0], trunk.medial_points[-1]))
         for branch_id, branch in self._branch_id_to_branch.items():
@@ -562,7 +562,7 @@ class ParameterExtraction:
             try:
                 branch_displacement: np.ndarray = branch.medial_points[-1] - branch.medial_points[branch.active_medial_point_start_idx]
                 branch_chord_length = np.linalg.norm(branch_displacement)
-                azimuth_angle = calculate_heading_angle(branch_displacement[:2]) 
+                azimuth_angle = calculate_heading_angle(branch_displacement[:2])
                 zenith_angle = _calculate_angle_between_vectors(
                     np.array([0., 0., 1.]), normalize(branch_displacement)
                 )
@@ -575,12 +575,12 @@ class ParameterExtraction:
             row_id = branch_id_to_row_id.get(branch_id, -1)
             if row_id != -1:
                 branch_dataframe.at[row_id, "max_spread_m"] = max_spread
-                branch_dataframe.at[row_id, "azimuth_deg"] = azimuth_angle
-                branch_dataframe.at[row_id, "zenith_deg"] = zenith_angle
+                branch_dataframe.at[row_id, "azimuth_deg"] = np.rad2deg(azimuth_angle)
+                branch_dataframe.at[row_id, "zenith_deg"] = np.rad2deg(zenith_angle)
                 branch_dataframe.at[row_id, "chord_length_m"] = branch_chord_length
                 branch_dataframe.at[row_id, "arc_height_m"] = arc_height
                 branch_dataframe.at[row_id, "base_offset_m"] = base_offset
-                branch_dataframe.at[row_id, "base_azimuth_deg"] = base_azimuth_angle
+                branch_dataframe.at[row_id, "base_azimuth_deg"] = np.rad2deg(base_azimuth_angle)
         
         # Height difference & branching radius & branching angle & deflection angle of the branch tip & vertical deflection angle & tip_based_DINC & apex_based_DINC
         segmentwise_directions: np.ndarray = trunk.medial_points[1:] - trunk.medial_points[:-1]
@@ -654,10 +654,10 @@ class ParameterExtraction:
                 except Exception:
                     pass
 
-            branch_dataframe.at[row_id, "branching_angle_deg"] = branching_angle
-            branch_dataframe.at[row_id, "tip_deflection_angle_deg"] = tip_deflection_angle
+            branch_dataframe.at[row_id, "branching_angle_deg"] = np.rad2deg(branching_angle)
+            branch_dataframe.at[row_id, "tip_deflection_angle_deg"] = np.rad2deg(tip_deflection_angle)
             branch_dataframe.at[row_id, "branching_radius_m"] = branching_radius
-            branch_dataframe.at[row_id, "vertical_deflection_angle_deg"] = vertical_deflection_angle
+            branch_dataframe.at[row_id, "vertical_deflection_angle_deg"] = np.rad2deg(vertical_deflection_angle)
 
             branch_dataframe.at[row_id, "tip_based_DINC_m"] = tree_height - upper_bounds[-1] + z_min
             branch_dataframe.at[row_id, "apex_based_DINC_m"] = tree_height - np.max(upper_bounds) + z_min

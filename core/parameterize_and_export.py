@@ -34,9 +34,9 @@ def parameterize_and_export(
         projection: str = "",
         parameter_extraction_kwargs: Dict[str, Any] = {},
         creator: str = "SmartQSM",
-        **addtional_info_kwargs: Dict[str, Any]
+        **additional_info_kwargs: Dict[str, Any]
 ) -> None:
-    if "hash" in addtional_info_kwargs or "target_ply" in addtional_info_kwargs:
+    if "hash" in additional_info_kwargs or "target_ply" in additional_info_kwargs:
         raise ValueError("'hash' and 'target_ply' are reserved keywords.")
     
     # Check order
@@ -189,6 +189,19 @@ def parameterize_and_export(
         if branch_data[key].ndim == 1:
             branch_data[key] = branch_data[key].reshape(-1, 1)
     
+    for key in list(additional_info_kwargs.keys()):
+        value: Any = additional_info_kwargs[key]
+        if isinstance(value, (int, np.integer)):
+            additional_info_kwargs[key] = np.int64(value)
+        elif isinstance(value, (float, np.floating)):
+            additional_info_kwargs[key] = np.float64(value)
+        elif isinstance(value, (bool, np.bool_)):
+            additional_info_kwargs[key] = np.bool_(value)
+        elif isinstance(value, np.ndarray):
+            additional_info_kwargs[key] = value
+        else:
+            additional_info_kwargs[key] = str(value)
+
     qsm: Dict[str, Any] = {
         "QSM": {
             "cylinder": qsm_cylinder_dict,
@@ -201,7 +214,7 @@ def parameterize_and_export(
                     "projection": projection,
                     "creator": creator
                 },
-                **addtional_info_kwargs
+                **additional_info_kwargs
             }
         }
     }

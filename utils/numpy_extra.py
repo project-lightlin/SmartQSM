@@ -28,7 +28,7 @@ def calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
     if norm_product == 0:
         return np.nan
     cos_angle = dot_product / norm_product
-    angle = np.rad2deg(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
+    angle = np.arccos(np.clip(cos_angle, -1.0, 1.0))
     return angle
 
 def calculate_distances_from_points_to_line(points: np.ndarray, line_start: np.ndarray, line_end: np.ndarray) -> np.ndarray:
@@ -141,15 +141,15 @@ def calculate_heading_angle(heading_direction: np.ndarray, reference_direction: 
     x = reference_direction / np.linalg.norm(reference_direction)
     y = heading_direction / np.linalg.norm(heading_direction)
     cos_angle = np.dot(x, y)
-    angle = np.arccos(cos_angle) / np.pi * 180 # np.arccos => 0~pi
+    angle = np.arccos(cos_angle) # np.arccos => 0~pi
     cross = x[0] * y[1] - x[1] * y[0]
     if not clockwise:
         if cross < 0.:
-            angle = 360. - angle
+            angle = 2.0 * np.pi - angle
     else:
         if cross > 0.:
-            angle = 360. - angle
-    if angle == 360.: # Due to the loss of numerical accuracy
+            angle = 2.0 * np.pi - angle
+    if angle == 2.0 * np.pi: # Due to the loss of numerical accuracy
         return 0.
     else:
         return angle
