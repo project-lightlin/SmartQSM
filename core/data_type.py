@@ -28,6 +28,7 @@ class Branch:
     active_medial_point_start_idx: int = 0
     radii: Optional[np.ndarray] = None
     arterial_snake: Optional[o3d.geometry.TriangleMesh] = None # Used to store simplified output, including the connection section
-    backup_arterial_snake: Optional[o3d.geometry.TriangleMesh] = None # Used for parameter extraction, removed the connection part and calculated as wood 
+    backup_arterial_snake: Optional[o3d.geometry.TriangleMesh] = None # Used for parameter extraction, excluding the connection section
     base_radius: Optional[float] = None
     num_sectional_vertices: Optional[int] = None
+    reserved_medial_point_indices: Optional[np.ndarray] = None 

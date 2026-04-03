@@ -179,7 +179,7 @@ def construct_rough_geodetic_graph_3d(
         source_selection_criteria: Callable[[np.ndarray], int] = lambda P: np.argmin(P[:, 2]), 
         max_patch_size: float = 0., 
         neighborhood_size: float = 0.
-) -> Tuple[nx.DiGraph, np.ndarray, np.ndarray]:
+) -> Tuple[nx.DiGraph, np.ndarray, np.ndarray, List[np.ndarray]]:
     # Patchify
     # If a point cloud graph is directly generated, both k-nearest neighbors and Delaunay tetrahedration will be very slow and memory-consuming. 
     # Using the strategy of TreeQSM, the point cloud is divided into small patches, and the points within these small patches are sufficiently close to each other.
@@ -338,7 +338,7 @@ def construct_rough_geodetic_graph_3d(
         (edge[0], edge[1], np.linalg.norm(points[edge[0]] - points[edge[1]])) for edge in shortest_path_edges
     ])
 
-    return geodetic_graph, shortest_distances, patch_center_indices
+    return geodetic_graph, shortest_distances, patch_center_indices, point_indices_per_patch
 
 def is_skeleton_source_correct(T: nx.DiGraph, P: np.ndarray, criteria: Callable = lambda P: np.argmin(P[:, 2])) -> bool:
     assert is_rooted_tree(T)

@@ -100,7 +100,8 @@ def parameterize_and_export(
         "UnmodRadius": [],
         "branch": [],
         "BranchOrder": [],
-        "PositionInBranch": []
+        "PositionInBranch": [],
+        "simplified": []
     }
     branch_id_to_start_cylinder_id: Dict[int, int] = {}
     added_cylinder_count: int = 0
@@ -130,6 +131,9 @@ def parameterize_and_export(
         extension: np.ndarray = added_cylinder_count + PositionInBranch + 1
         extension[-1] = 0
 
+        simplified: np.ndarray = np.ones(num_cylinders, dtype=bool)
+        simplified[branch.reserved_medial_point_indices[1:] - 1] = False
+
         qsm_cylinder_dict["radius"].append(radius.astype(np.float32))
         qsm_cylinder_dict["length"].append(length.astype(np.float32))
         qsm_cylinder_dict["start"].append(start.astype(np.float64))
@@ -141,6 +145,7 @@ def parameterize_and_export(
         qsm_cylinder_dict["branch"].append(branch_.astype(np.uint64))
         qsm_cylinder_dict["BranchOrder"].append(BranchOrder.astype(np.uint64))
         qsm_cylinder_dict["PositionInBranch"].append(PositionInBranch.astype(np.uint64))
+        qsm_cylinder_dict["simplified"].append(simplified.astype(np.bool_))
 
         branch_id_to_start_cylinder_id[branch_id] = added_cylinder_count
         added_cylinder_count += num_cylinders

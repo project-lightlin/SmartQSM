@@ -58,7 +58,7 @@ class Modeling(Pipeline):
         )
         return
     
-    def set_params(self, *, num_sectional_vertices: int = 20,  using_furcation_optimization: bool = True, min_radius: float = 0.001, resolution: float = 0.01, range_multiplier: float = 2.0, num_sectional_vertices_for_optimization: int = 12, rdp_epsilon: float = 0.01, num_hermite_nodes: int = 8) -> None:
+    def set_params(self, *, num_sectional_vertices: int,  using_furcation_optimization: bool = True, min_radius: float = 0.001, resolution: float = 0.01, range_multiplier: float = 2.0, num_sectional_vertices_for_optimization: int = 12, rdp_epsilon: float = 0.01, num_hermite_nodes: int = 8) -> None:
         if num_sectional_vertices < 3 or num_sectional_vertices_for_optimization < 3:
             raise ValueError("num_sectional_vertices must be >= 3")
         self._num_sectional_vertices = num_sectional_vertices
@@ -166,7 +166,7 @@ class Modeling(Pipeline):
             if math.isnan(mesh_area):
                 continue
             
-            num_points: int = int(np.ceil(mesh_area * (1 / self._resolution) * (1 / self._resolution) * (4 / 3.14)))
+            num_points: int = int(np.ceil(mesh_area * (1.0 / self._resolution) * (1.0 / self._resolution) * (4.0 / np.pi)))
             cloud: o3d.geometry.PointCloud = mesh.sample_points_uniformly(
                 number_of_points=num_points,
                 use_triangle_normal=True
@@ -338,18 +338,21 @@ class Modeling(Pipeline):
             
             # Apply Ramer–Douglas–Peucker polyline simplification to the mesh to export a much smaller model
             # BUT DO NOT MODIFY THE ORIGINAL PATH (the point at joint_point_idx might be missing).
-            reserved_medial_points: np.ndarray
-            reserved_medial_point_indices: np.ndarray
-            reserved_medial_points, reserved_medial_point_indices = rdp_fast(branch.medial_points[offset:], self._rdp_epsilon)
-            
-            reserved_medial_points = np.concatenate((
+            reserved_offset_medial_points: np.ndarray
+            reserved_offset_medial_point_indices: np.ndarray
+            reserved_offset_medial_points, reserved_offset_medial_point_indices = rdp_fast(branch.medial_points[offset:], self._rdp_epsilon)
+
+            reserved_medial_points: np.ndarray = np.concatenate((
                 branch.medial_points[:offset], 
-                reserved_medial_points
+                reserved_offset_medial_points
             ))
-            reserved_radii: np.ndarray = np.concatenate((
-                branch.radii[:offset], 
-                branch.radii[reserved_medial_point_indices + offset]
-            ))
+
+            reserved_medial_point_indices: np.ndarray = np.concatenate(
+                (np.arange(offset), reserved_offset_medial_point_indices + offset)
+            )
+
+            reserved_radii: np.ndarray = branch.radii[reserved_medial_point_indices]
+            self._branch_id_to_branch[branch_id].reserved_medial_point_indices = reserved_medial_point_indices
             
             mesh: o3d.geometry.TriangleMesh = generate_arterial_snake(
                 reserved_medial_points, 

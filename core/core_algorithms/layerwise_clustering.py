@@ -92,7 +92,7 @@ class LayerwiseClustering(CoreAlgorithmBase):
         ]
 
     def _construct_geodetic_graph(self) -> Optional[Tuple[str, o3d.geometry.LineSet]]:
-        self._geodetic_graph, self._shortest_distances, _ = construct_rough_geodetic_graph_3d(self._points, max_patch_size=self._max_patch_size, neighborhood_size=self._neighborhood_size)
+        self._geodetic_graph, self._shortest_distances, _, _ = construct_rough_geodetic_graph_3d(self._points, max_patch_size=self._max_patch_size, neighborhood_size=self._neighborhood_size)
         
         if not self._verbose:
             return

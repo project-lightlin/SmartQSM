@@ -1,6 +1,6 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
-Latest version **2.1.0** released on 2026/04/02. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+Latest version **2.1.3** released on 2026/04/03. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
 
 ----------- 
 

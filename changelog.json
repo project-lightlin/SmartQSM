@@ -1,5 +1,49 @@
 {
     "releases": [
+        
+        {
+            "version": "2.1.3",
+            "codename": "Ginkgo",
+            "released": "2026/04/03",
+            "changelog": [
+                {
+                    "title": "The output of function construct_rough_geodetic_graph_3d has changed.",
+                    "released": "2026/04/03",
+                    "label": "Changed",
+                    "module": "utils.networkx_extra",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Data structure of QSM file has been updated for the storage of simplified cylinders.",
+                    "released": "2026/04/03",
+                    "label": "Changed",
+                    "module": "core.parameterize_and_export",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Warning '<string>:1: RuntimeWarning: invalid value encountered in scalar divide.' has been ignored.",
+                    "released": "2026/04/03",
+                    "label": "Changed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
         {
             "version": "2.1.0",
             "codename": "Ginkgo",

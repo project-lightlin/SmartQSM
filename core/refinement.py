@@ -32,6 +32,8 @@ from scipy.optimize import Bounds
 from utils.scipy_extra import wrapped_minimize
 from .pipeline import Pipeline
 from utils.scipy_extra import MonotoneISplineQP
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 class Refinement(Pipeline):
     _trusted_aboveground_height: Optional[float]

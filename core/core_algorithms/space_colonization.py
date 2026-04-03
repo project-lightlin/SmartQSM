@@ -168,7 +168,7 @@ class SpaceColonization(CoreAlgorithmBase):
     def _grow(self) -> Optional[Tuple[str, o3d.geometry.LineSet, o3d.geometry.PointCloud]]:
         points = self._points
         n_points = len(points)
-        geodetic_graph, shortest_distances, _ = construct_rough_geodetic_graph_3d(
+        geodetic_graph, shortest_distances, _, _ = construct_rough_geodetic_graph_3d(
             points,
             max_patch_size=self._max_patch_size,
             neighborhood_size=self._neighborhood_size
