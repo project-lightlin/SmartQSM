@@ -8,13 +8,11 @@ def _eval_underscore_keys_in_nested_dict(obj):
     if isinstance(obj, dict):
         new_dict = {}
         for key, value in obj.items():
-            # 1. 先递归处理子元素，确保拿到最终值
             processed_value = _eval_underscore_keys_in_nested_dict(value)
             
             target_key = key
             final_value = processed_value
             
-            # 2. 判断是否需要 eval
             if isinstance(key, str) and key.startswith("_") and key.endswith("_"):
                 if len(key) < 3:
                      raise ValueError(f"Invalid key format: '{key}'")
