@@ -31,9 +31,9 @@ This method integrates multiple (reimplemented and improved) tree skeleton extra
 >
 > **More to come...**
 
-and supports the extraction of [82 multiscale parameters (Click here to view details)](https://github.com/project-lightlin/misc/blob/main/doc/parameter-list-of-smartqsm.md) including
+and supports the extraction of [82 multiscale architectural metrics (Click here to view details)](https://github.com/project-lightlin/misc/blob/main/doc/parameter-list-of-smartqsm.md) including
 
-| Type | Parameters |
+| Type | Architectural metrics |
 | --- | --- |
 |Individual-scale: tree parameters| Location, Number of branches, Max branch order, Tree height, DBH, Girth, Ground diameter, Bole height, Diameter at bole height, Bole length, Bole area, Bole volume, Trunk length, Trunk area, Trunk volume, Stem length, Stem area, Stem volume, Within-crown stem length, Within-crown stem area, Within-crown stem volume, Min crown radius, Azimuth of min crown radius, Height at min crown radius, Mean crown radius, Max crown radius, Azimuth of max crown radius, Height at max crown radius, Min crown width, Azimuth of min crown width, Mean crown width, Max crown width, Azimuth of max crown width, East-west crown width, North-south crown width, Crown convex area, Crown convex volume, Active crown convex area, Active crown convex volume, Crown projection convex area, Crown perimeter, Canopy area, Crown center offset, Crown center azimuth, Min crown spread, Azimuth of min crown spread, Max crown spread, Azimuth of max crown spread, etc.|
 |Organ-scale: branch attributes| Order, Base height, Base diameter, Mid-length diameter, Tip diameter, Length, Area, Volume, Max spread, Azimuth, Zenith, Chord length, Arc height, Height difference, Branching radius, Branching angle, Tip deflection angle, Vertical deflection angle, Tip-based DINC, Apex-based DINC, Growth length, Growth area, Growth volume, Base offset, Base azimuth, Insertion distance, etc.|
