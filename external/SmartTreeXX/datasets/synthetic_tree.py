@@ -124,9 +124,6 @@ class SyntheticTreeDataset(Dataset):
             displacements = torch.from_numpy(data["displacement"]).type(torch.float32)
             if self._cache is not None:
                 self._cache[id] = (points, displacements)
-
-        points = points.to(self._device)
-        displacements = displacements.to(self._device)
         
         random_point_idx: int = torch.randint(0, points.shape[0], (1,)).item()
         cube_center: torch.Tensor = points[random_point_idx]
@@ -144,26 +141,29 @@ class SyntheticTreeDataset(Dataset):
         min_diagonal = min_diagonal.squeeze()
         max_diagonal = max_diagonal.squeeze()
 
-        point_indices: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
+        # Voxelization must happen on CPU
+        point_indices = torch.arange(points.shape[0]).unsqueeze(1)
+        features = torch.cat([points, point_indices.float()], dim=1)
 
-        features: torch.Tensor = torch.cat([points, point_indices], dim=1)
-        voxel_indices: torch.Tensor
         features, voxel_indices, _, _ = PointToVoxel(
             vsize_xyz=[self._voxel_size] * 3,
             coors_range_xyz=[
-                min_diagonal[0], min_diagonal[1], min_diagonal[2],
-                max_diagonal[0], max_diagonal[1], max_diagonal[2]
+                min_diagonal[0].item(), min_diagonal[1].item(), min_diagonal[2].item(),
+                max_diagonal[0].item(), max_diagonal[1].item(), max_diagonal[2].item()
             ],
             num_point_features=features.shape[1],
             max_num_voxels=features.shape[0],
             max_num_points_per_voxel=1,
-            device=features.device
+            device=torch.device("cpu")  # <-- must be CPU
         ).generate_voxel_with_id(features)
 
-        features = features.squeeze(1)
+        # Move to target device after voxelization
+        features = features.squeeze(1).to(self._device)
+        voxel_indices = voxel_indices.to(self._device)
+
         points = features[: ,:3]
         point_indices = features[:, 3].int()
-        displacements = displacements[point_indices]
+        displacements = displacements.to(self._device)[point_indices]
 
         batch_ids: torch.Tensor =  torch.zeros(
             (voxel_indices.shape[0], 1),
@@ -240,8 +240,8 @@ class SingleTreeDataset(Dataset):
             else:
                 raise ValueError
         else:
-            points = torch.from_numpy(tree_path_or_points_with_displacement[:, :3])
-            displacements = torch.from_numpy(tree_path_or_points_with_displacement[:, 3:])
+            points = torch.from_numpy(tree_path_or_points_with_displacement[:, :3]).type(torch.float32)
+            displacements = torch.from_numpy(tree_path_or_points_with_displacement[:, 3:]).type(torch.float32)
 
         cube_indices: torch.Tensor = torch.div(points, cube_size, rounding_mode = "floor")
         point_counts_per_cube: torch.Tensor
@@ -297,31 +297,31 @@ class SingleTreeDataset(Dataset):
 
         points, displacements, min_diagonal, max_diagonal, mask = self._data[index]
 
-        points = points.to(self._device)
-        displacements = displacements.to(self._device)
-        mask = mask.to(self._device)
+        # Voxelization must happen on CPU
+        point_indices = torch.arange(points.shape[0]).unsqueeze(1)
+        features = torch.cat([points, point_indices.float()], dim=1)
 
-        point_indices: torch.Tensor = torch.arange(points.shape[0], device=points.device).unsqueeze(1)
-        features: torch.Tensor = torch.cat([points, point_indices], dim=1)
-
-        voxel_indices: torch.Tensor
         features, voxel_indices, _, _ = PointToVoxel(
             vsize_xyz=[self._voxel_size] * 3,
             coors_range_xyz=[
-                min_diagonal[0], min_diagonal[1], min_diagonal[2],
-                max_diagonal[0], max_diagonal[1], max_diagonal[2]
+                min_diagonal[0].item(), min_diagonal[1].item(), min_diagonal[2].item(),
+                max_diagonal[0].item(), max_diagonal[1].item(), max_diagonal[2].item()
             ],
             num_point_features=features.shape[1],
             max_num_voxels=features.shape[0],
             max_num_points_per_voxel=1,
-            device=features.device
+            device=torch.device("cpu")  # <-- must be CPU
         ).generate_voxel_with_id(features)
+
+        # Move to target device after voxelization
+        features = features.squeeze(1).to(self._device)
+        voxel_indices = voxel_indices.to(self._device)
         
         features = features.squeeze(1)
         points = features[:, :3]
         point_indices = features[:, 3].int()
-        displacements = displacements[point_indices]
-        mask = mask[point_indices]
+        displacements = displacements.to(self._device)[point_indices]
+        mask = mask.to(self._device)[point_indices]
 
         batch_ids: torch.Tensor =  torch.zeros(
             (voxel_indices.shape[0], 1),

@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.1.5",
+            "codename": "Ginkgo",
+            "released": "2026/04/10",
+            "changelog": [
+                {
+                    "title": "Fixed codes of smart-tree-xx. Thank @zhorve for reporting and giving repair suggestions.",
+                    "released": "2026/04/10",
+                    "label": "Fixed",
+                    "module": "external.SmartTreeXX.datasets.synthetic_tree",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.1.4",
             "codename": "Ginkgo",
             "released": "2026/04/10",

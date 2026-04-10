@@ -1,6 +1,6 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
-Latest version **2.1.4** released on 2026/04/10. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+Latest version **2.1.5** released on 2026/04/10. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
 
 ----------- 
 
@@ -57,7 +57,7 @@ and supports the extraction of [82 multiscale architectural metrics (Click here 
 > - @Luneighbour Mr. Nanbo Lu (鲁南博), Central South University of Forestry & Technology: *Test*
 > - @Cathy Dr. Tianrun Cai (蔡天润), Research Institute of Forestry, Chinese Academy of Forestry: *Test*
 > ### Acknowledgements
-> 
+> @zhorve
 
 ## :balance_scale: License
 
