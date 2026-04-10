@@ -56,7 +56,7 @@ and supports the extraction of [82 multiscale architectural metrics (Click here 
 > - @jk160804211 Dr. Kang Jiang (蒋康), Nanjing Forestry University: *Reimplementation of space colonization*
 > - @Luneighbour Mr. Nanbo Lu (鲁南博), Central South University of Forestry & Technology: *Test*
 > - @Cathy Dr. Tianrun Cai (蔡天润), Research Institute of Forestry, Chinese Academy of Forestry: *Test*
-> ### Acknowledgements
+> ### Special Thanks
 > @zhorve
 
 ## :balance_scale: License
