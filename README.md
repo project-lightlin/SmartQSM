@@ -12,7 +12,7 @@ Latest version **2.1.4** released on 2026/04/10. [Click here to view changelog](
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author (see below) and we will review it as soon as possible!
 >
-> For technical reasons, early versions (<=2.1.0) underwent many changes. We apologize for any inconvenience  any inconvenience this may have caused.
+> For technical reasons, early versions (<=2.1.4) underwent many changes. We apologize for any inconvenience  any inconvenience this may have caused.
 >
 ## :smiley: First Impression
 
