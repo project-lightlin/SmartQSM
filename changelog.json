@@ -1,6 +1,24 @@
 {
     "releases": [
-        
+        {
+            "version": "2.1.4",
+            "codename": "Ginkgo",
+            "released": "2026/04/10",
+            "changelog": [
+                {
+                    "title": "Fixed seriously wrong configuration items on spconv-contraction-LEAFON-GPU",
+                    "released": "2026/04/10",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
         {
             "version": "2.1.3",
             "codename": "Ginkgo",
