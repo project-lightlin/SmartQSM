@@ -160,13 +160,13 @@ python entrypoints/parameter_exporter.py
 
 Import one or more **\*_qsm.mat** files and convert them into an XLSX Excel workbook.
 
-### 4. Run Stand Structurer: Calculation and tabular output tool for stand's spatial structure parameters
+### 4. Run Stand Structurer: Calculation and tabular output tool for stand's spatial structure indices
 
 ```bash
 python entrypoints/stand_structurer.py
 ```
 
-Use an Excel worksheet containing tree name, X coordinate, Y coordinate, tree height, DBH, mean crown width, and species to calculate stand's spatial structure parameters and output the results in an XLSX Excel file. The output worksheet from the output workbook by Parameter Exporter can be used as input once a species column is added.
+Use an Excel worksheet containing tree name, X coordinate, Y coordinate, tree height, DBH, mean crown width, and species to calculate stand's spatial structure indices and output the results in an XLSX Excel file. The output worksheet from the output workbook by Parameter Exporter can be used as input once a species column is added.
 
 ## :rocket: About Upgrade
 
