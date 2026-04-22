@@ -137,7 +137,7 @@ class SegmentationBasedSkeletonizationPipeline(SkeletonizationPipelineBase):
             core_algorithm: str,
             core_algorithm_kwargs: Dict[str, Any] = {},
             centroid_estimator: str = "mass_center", 
-            params_for_centroid_estimator: Dict[str, Any] = {}, 
+            centroid_estimator_kwargs: Dict[str, Any] = {}, 
             radius_estimator: str = "gmm",
             radius_estimator_kwargs: Dict[str, Any] = {}, 
             **kwargs
@@ -147,7 +147,7 @@ class SegmentationBasedSkeletonizationPipeline(SkeletonizationPipelineBase):
             **core_algorithm_kwargs
         )
 
-        self._centroid_estimator = _CentroidEstimator(solver=centroid_estimator, **params_for_centroid_estimator)
+        self._centroid_estimator = _CentroidEstimator(solver=centroid_estimator, **centroid_estimator_kwargs)
         self._radius_estimator = _RadiusEstimator(solver=radius_estimator, **radius_estimator_kwargs)
         
         super().set_params(

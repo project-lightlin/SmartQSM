@@ -54,6 +54,7 @@ def run_post_install(root_dir: str):
         "utils/evaluate_skeleton.py",
         "utils/loss_fn.py",
         "utils/xlsx_io.py",
+        "utils/get_distinct_colors.py",
     ]
     for useless_file_path in useless_file_paths:
         try:

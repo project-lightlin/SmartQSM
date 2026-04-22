@@ -28,7 +28,7 @@ class Skeletonization:
         self._verbose = verbose
         return
     
-    def set_params(self, category: str = "hybrid", **kwargs) -> None:
+    def set_params(self, category: str, **kwargs) -> None:
         if category == "segmentation":
             self._skeletonizer = SegmentationBasedSkeletonizationPipeline(verbose=self._verbose)
         elif category == "thinning":

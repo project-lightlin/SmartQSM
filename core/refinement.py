@@ -26,7 +26,7 @@ from sklearn.isotonic import IsotonicRegression
 from .data_type import Branch
 from scipy.spatial import KDTree
 from utils.fem_pos_deviation_osqp_interface import FemPosDeviationOsqpInterface
-from utils.get_distinct_colors import get_distinct_colors
+from utils.distinctipy_extra import get_distinct_colors
 from utils.open3d_extra import create_cylinder
 from scipy.optimize import Bounds
 from utils.scipy_extra import wrapped_minimize
@@ -43,8 +43,6 @@ class Refinement(Pipeline):
     _y0_on_gamma_dist: Optional[float]
     _wpl_based_correction_fn_for_radius_weights: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]]
     _min_radius: Optional[float]
-
-    _occupancy_factor_or_buffer: Optional[float]
 
     _smoother_kwargs: Optional[Dict[str, Any]]
 
@@ -76,6 +74,7 @@ class Refinement(Pipeline):
     _reference_radii: Optional[np.ndarray]
     _path_idx_to_branch: Optional[Dict[int, Branch]]
     _branch_id_to_branch: Optional[Dict[int, Branch]]
+    _edge_to_base_radius: Optional[Dict[Tuple[int, int], float]]
 
     def _clear(self) -> None:
         self._trusted_aboveground_height = None
@@ -85,8 +84,6 @@ class Refinement(Pipeline):
         self._y0_on_gamma_pdf = None
         self._wpl_based_correction_fn_for_radius_weights = None
         self._min_radius = None
-
-        self._occupancy_factor_or_buffer = None
 
         self._smoother_kwargs = None
 
@@ -105,6 +102,7 @@ class Refinement(Pipeline):
         self._min_num_credible_samples = None
         self._making_twigs_thinner = None
         self._node_weight_fn = None
+        self._edge_to_base_radius = None
 
         self._z_min = None
         self._tree_height = None
@@ -143,7 +141,6 @@ class Refinement(Pipeline):
             y0_on_gamma_pdf: Optional[float] = None,
             wpl_based_correction_function_for_radius_weights: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], str] = lambda radius_weights, wpls: radius_weights * (np.log(wpls + 1.0) / np.log(np.max(wpls) + 1.0)),
             min_radius: float = 1.0e-3,
-            occupancy_factor_or_buffer: float = 1.1,
             smoother_kwargs: Optional[Dict[str, Any]] = {},
             radius_tolerance: float = 0.1,
             using_allometric_equation: bool = True,
@@ -159,7 +156,7 @@ class Refinement(Pipeline):
             lam_intercept_tuning_function: Optional[Callable[[float, float, float, float], float]] = lambda wpl, wpl_max, lam_lb, lam_ub: (lam_lb / lam_ub) ** (np.log(wpl + 1.0) / np.log(wpl_max + 1.0)) * lam_ub,
             min_num_credible_samples: int = 5,
             making_twigs_thinner: bool = True,
-            node_weight_function: Union[Callable[[float, float, float, float], float], str] = lambda wpl, wpl_pred, r, r_pred: np.log(wpl + 1.0) / np.log(wpl_pred + 1.0) + r / r_pred,
+            node_weight_function: Union[Callable[[float, float, float, float], float], str] = lambda wpl, wpl_pred, r, r_pred: wpl / wpl_pred + r / r_pred,
     ) -> None:
         if min_radius <= 0.:
             raise ValueError("min_radius must be > 0.")
@@ -167,9 +164,6 @@ class Refinement(Pipeline):
         if radius_tolerance < 0. or radius_tolerance > 1.:
             raise ValueError("radius_tolerance must be >= 0. and <= 1.")
         self._radius_tolerance = radius_tolerance
-        if occupancy_factor_or_buffer <= 0.:
-            raise ValueError("occupancy_factor_or_buffer must be > 0, where [0, 1) is buffer size and >=1 is multiplier.")
-        self._occupancy_factor_or_buffer = occupancy_factor_or_buffer
         if trusted_aboveground_height < 0.:
             raise ValueError("trusted_aboveground_height should be >= 0 (relative height [meter] to the ground).")
         self._trusted_aboveground_height = trusted_aboveground_height
@@ -221,16 +215,14 @@ class Refinement(Pipeline):
 
         super()._clear_pipeline()
         super()._add_fns_to_pipeline(len(self._pipeline), [
-            self._partition_paths,
             self._generate_branches,
             self._calculate_reference_radii,
             self._identify_reasonable_branches,
             self._update_skeleton,
-            self._partition_paths, # Required! As many twigs are removed, WPLs have changed and the selection of thicker branch at the furcation should be different from before.
-            self._generate_branches,
+            self._generate_branches, # Required! As many twigs are removed, WPLs have changed and the selection of thicker branch at the furcation should be different from before.
+            self._estimate_radii,
             self._identify_reasonable_branches, # Required! 
             self._update_skeleton,
-            self._estimate_radii,
         ])
         if not self._using_allometric_equation:
             super()._add_fns_to_pipeline(len(self._pipeline), [
@@ -238,11 +230,12 @@ class Refinement(Pipeline):
             ])
         super()._add_fns_to_pipeline(len(self._pipeline), [
             self._smooth_pathwise,
+            self._identify_reasonable_branches, # New. There may be internal points after the position of skeleton points changes
             self._convert_data_format
         ])
         return
 
-    def _partition_paths(self) -> Optional[Tuple[str, o3d.geometry.PointCloud, o3d.geometry.LineSet]]:
+    def _generate_branches(self) -> Optional[Tuple[str, o3d.geometry.LineSet]]:
         # Compute WPL and partition path greedlily
         # On different branch segments, there is a significant difference in the numerical values of weight path lengths
         node_to_weighted_path_length: Dict[int, float] = WeightedPathLength(self._skeleton).compute_all()
@@ -255,49 +248,33 @@ class Refinement(Pipeline):
             maximized=True
         ).get_paths()
 
-        if not self._verbose:
-            return
-        
-        path_colors: np.ndarray = np.array(get_distinct_colors(len(self._paths)))
-        lineset: o3d.geometry.LineSet = o3d.geometry.LineSet()
-        lineset.points = o3d.utility.Vector3dVector(self._skeletal_points)
-        edges: List[Tuple[int, int]] = []
-        edge_colors: List[Tuple[float, float, float]] = []
-        for path_idx, path in enumerate(self._paths):
-            for i in range(len(path) - 1):
-                edges.append((path[i], path[i + 1]))
-                edge_colors.append(path_colors[path_idx])
-        lineset.lines = o3d.utility.Vector2iVector(edges)
-        lineset.colors = o3d.utility.Vector3dVector(edge_colors)
-        return f"Partitioned the skeleton into {len(self._paths)} paths.", lineset
-
-    def _generate_branches(self) -> Optional[Tuple[str, o3d.geometry.LineSet]]:
-        branch_orders_of_node: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
-        path_indices_of_node: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
+        branch_orders: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
+        path_indices: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
         self._path_idx_to_branch = {}
         for path_idx, path in enumerate(self._paths):
-            branch: Branch = Branch()
             parent_branch_id: int = -1
             branch_order: int = 0
             joint_point_idx: int = -1
             if path_idx != 0:
-                parent_branch_id = path_indices_of_node[path[0]]
-                branch_order = branch_orders_of_node[path[0]] + 1
+                parent_branch_id = path_indices[path[0]]
+                branch_order = branch_orders[path[0]] + 1
                 joint_point_idx = path[0]
                 path = path[1:] # Remove the joint point from each branch
+            self._paths[path_idx] = path
+            
+            branch: Branch = Branch()
             branch.order = branch_order
             branch.parent_id = parent_branch_id
-            branch.base_radius = self._skeletal_points[path[0], 2] # Temporarily borrow this attribute to store height for sorting
             branch.joint_point_idx = joint_point_idx
             self._path_idx_to_branch[path_idx] = branch
-            branch_orders_of_node[path] = branch_order
-            path_indices_of_node[path] = path_idx
-            self._paths[path_idx] = path
+            branch_orders[path] = branch_order
+            path_indices[path] = path_idx
+            
 
-        # Sort dictionary in ascending sequence of order and descending sequence of height
+        # Sort dictionary in ascending sequence of order 
         self._path_idx_to_branch = dict(sorted(
             self._path_idx_to_branch.items(), 
-            key=lambda item: (item[1].order, -item[1].base_radius)
+            key=lambda item: (item[1].order, -len(self._paths[item[0]])) # Order from low to high. Number of points at the same order from more to less.
         ))
 
         if not self._verbose:
@@ -403,16 +380,8 @@ class Refinement(Pipeline):
         return f"Calculated the reference radii (max={np.max(self._reference_radii):.4f}).", mesh
 
     def _identify_reasonable_branches(self) -> Optional[Tuple[str, o3d.geometry.PointCloud, o3d.geometry.LineSet]]:
-        # Thicker branches in the same order are given priority
-        for path_idx, branch in self._path_idx_to_branch.items():
-            branch.base_radius = self._reference_radii[self._paths[path_idx][0]]
-        self._path_idx_to_branch = dict(sorted(
-            self._path_idx_to_branch.items(), 
-            key=lambda item: (item[1].order, -item[1].base_radius)
-        ))
-        
         # Occupy nodes with a series of balls along each path
-        path_indices_of_node = -np.ones(len(self._skeletal_points), dtype=int)
+        path_indices = -np.ones(len(self._skeletal_points), dtype=int)
         after_check: np.ndarray = np.zeros(len(self._skeletal_points), dtype=bool)
         kdtree: KDTree = KDTree(self._skeletal_points)
         for path_idx in list(self._path_idx_to_branch.keys()):
@@ -446,8 +415,8 @@ class Refinement(Pipeline):
                 # Find parent branch
                 joint_node = list(self._skeleton.predecessors(path[0]))[0]
                 while True:
-                    if path_indices_of_node[joint_node] != -1 and after_check[joint_node] == True:
-                        parent_branch_id = path_indices_of_node[joint_node]
+                    if path_indices[joint_node] != -1 and after_check[joint_node] == True:
+                        parent_branch_id = path_indices[joint_node]
                         break
                     predecessors: List[int] = list(self._skeleton.predecessors(joint_node))
                     joint_node = predecessors[0] # It will definitely not be empty
@@ -459,7 +428,7 @@ class Refinement(Pipeline):
             
             neighbor_ids_per_node: List[List[int]] = kdtree.query_ball_point(
                 self._skeletal_points[path], 
-                r=self._reference_radii[path] * self._occupancy_factor_or_buffer if self._occupancy_factor_or_buffer >= 1. else self._reference_radii[path] + self._occupancy_factor_or_buffer
+                r=self._reference_radii[path]
             )
 
             inlier_nodes: np.ndarray = np.unique(
@@ -468,7 +437,7 @@ class Refinement(Pipeline):
             
             after_check[inlier_nodes] = True
         
-            path_indices_of_node[path] = path_idx
+            path_indices[path] = path_idx
 
         if not self._verbose:
             return
@@ -617,6 +586,8 @@ class Refinement(Pipeline):
         )
         path_idx_to_intercept: Dict[int, float] = {}
 
+        self._edge_to_base_radius = {}
+
         if self._using_allometric_equation:
             # Allometric equation:
             # y=a*(ln(1+x))^b X=ln(1+x):         b0=1.1 in [0.5,  1.5 ] a0=0.01 O(log(x))
@@ -670,7 +641,6 @@ class Refinement(Pipeline):
                     )
                     allometric_parameters = c[:-1]
                     path_idx_to_intercept[path_idx] = c[-1]
-                    self._path_idx_to_branch[path_idx].base_radius = np.nan
                 else:
                     # Given a0, b0 and c0, fit y=a0x^b0+c where initial c=c0 and c is restricted by the parent branch: 
                     # The thickness of the sub branch must not exceed the subsequent thickness of the parent branch at the branching joint
@@ -727,7 +697,8 @@ class Refinement(Pipeline):
 
                     path_idx_to_intercept[path_idx] = intercept
                     self._radii[path] = np.clip(self._allometric_eq_without_intercept(self._wpls[path], allometric_parameters) + intercept, self._min_radius, np.inf)
-                    self._path_idx_to_branch[path_idx].base_radius = max(
+                    
+                    self._edge_to_base_radius[(joint_node, path[0])] = max(
                         self._allometric_eq_without_intercept(growth_length, allometric_parameters) + intercept, 
                         self._min_radius
                     )
@@ -764,7 +735,7 @@ class Refinement(Pipeline):
                     
                     self._radii[path] = np.clip(spline(pathwise_wpls[1:]), self._min_radius, None)[::-1] # large to small
                     path_idx_to_intercept[path_idx] = spline(0.0)
-                    self._path_idx_to_branch[path_idx].base_radius = np.nan
+                    
                     path_idx_to_spline[path_idx] = spline
                 else:
                     growth_length: float = self._wpls[path[0]] + np.linalg.norm(self._skeletal_points[branch.joint_point_idx] - self._skeletal_points[path[0]])
@@ -783,7 +754,7 @@ class Refinement(Pipeline):
                     self._radii[path] = np.clip(spline(pathwise_wpls[1:-1]), self._min_radius, self._radii[branch.joint_point_idx])[::-1] # large to small
 
                     path_idx_to_intercept[path_idx] = spline(0.0)
-                    self._path_idx_to_branch[path_idx].base_radius = max(
+                    self._edge_to_base_radius[(branch.joint_point_idx, path[0])] = max(
                         self._min_radius, 
                         min(
                             max(
@@ -819,6 +790,8 @@ class Refinement(Pipeline):
                         self._radii[descendant],
                         np.sqrt(self._radii[node] ** 2 - np.linalg.norm(self._skeletal_points[node] - self._skeletal_points[descendant]) ** 2)
                     )
+
+        self._reference_radii = self._radii # For self._identify_reasonable_branches
 
         if not self._verbose:
             return
@@ -856,8 +829,8 @@ class Refinement(Pipeline):
             maximized=True
         ).get_paths()
 
-        branch_orders_of_node: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
-        path_indices_of_node: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
+        branch_orders: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
+        path_indices: np.ndarray = -np.ones(len(self._skeletal_points), dtype=int)
         self._path_idx_to_branch = {}
         for path_idx, path in enumerate(paths):
             branch: Branch = Branch()
@@ -865,22 +838,21 @@ class Refinement(Pipeline):
             branch_order: int = 0
             joint_point_idx: int = -1
             if path_idx != 0:
-                parent_branch_id = path_indices_of_node[path[0]]
-                branch_order = branch_orders_of_node[path[0]] + 1
+                parent_branch_id = path_indices[path[0]]
+                branch_order = branch_orders[path[0]] + 1
                 joint_point_idx = path[0]
                 path = path[1:] # Remove the joint point from each branch
             branch.order = branch_order
             branch.parent_id = parent_branch_id
-            branch.base_radius = self._radii[path[0]] 
             branch.joint_point_idx = joint_point_idx
             self._path_idx_to_branch[path_idx] = branch
-            branch_orders_of_node[path] = branch_order
-            path_indices_of_node[path] = path_idx
+            branch_orders[path] = branch_order
+            path_indices[path] = path_idx
             self._paths[path_idx] = path
 
         self._path_idx_to_branch = dict(sorted(
             self._path_idx_to_branch.items(), 
-            key=lambda item: (item[1].order, -item[1].base_radius)
+            key=lambda item: (item[1].order, -len(self._paths[item[0]])) # Order from low to high. Number of points at the same order from more to less.
         ))
 
         if not self._verbose:
@@ -924,6 +896,9 @@ class Refinement(Pipeline):
                 branch.joint_point_idx = node_to_new_node[branch.joint_point_idx]
 
             path: List[int] = self._paths[path_idx]
+            
+            branch.base_radius = self._edge_to_base_radius.get((branch.joint_point_idx, path[0]), self._radii[branch.joint_point_idx])
+
             i: int = len(path) - 2
             while i >= 0:
                 if np.linalg.norm(

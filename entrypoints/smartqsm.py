@@ -508,18 +508,30 @@ class Open3DApp:
 
     def _refresh_scene(self, *args, with_progress: bool = True):
         if len(args) != 0 and self._scene_widget is not None:
-            self._scene_widget.scene.clear_geometry()
             material_record = rendering.MaterialRecord()
             material_record.shader = "defaultLit"
+
+            cleaned: bool = False
             for i, arg in enumerate(args):
+                if arg is None:
+                    continue
+                
+                if type(arg) == str:
+                    self._current_status = arg
+                    continue
+
+                if not cleaned:
+                    self._scene_widget.scene.clear_geometry()
+                    cleaned = True
+
                 if type(arg) == o3d.geometry.PointCloud:
                     self._scene_widget.scene.add_geometry(str(i), arg, material_record)
                 elif type(arg) == o3d.geometry.TriangleMesh:
                     self._scene_widget.scene.add_geometry(str(i), arg, material_record)
                 elif type(arg) == o3d.geometry.LineSet:
                     self._scene_widget.scene.add_geometry(str(i), arg, material_record)
-                elif type(arg) == str:
-                    self._current_status = arg
+                
+                    
             if not self._scene_widget.scene.bounding_box.is_empty():
                 bounds = self._scene_widget.scene.bounding_box
                 self._scene_widget.setup_camera(60, bounds, bounds.get_center())
@@ -705,7 +717,7 @@ class Open3DApp:
                         if not isinstance(result, tuple):
                             result = (result,)
 
-                        gui.Application.instance.post_to_main_thread(self._window, lambda: self._refresh_scene(*result))
+                        gui.Application.instance.post_to_main_thread(self._window, lambda result=result: self._refresh_scene(*result))
                     except StopIteration as e:
                         self._current_progress = 0.25
                         self._current_status = "Waiting..."
@@ -738,7 +750,7 @@ class Open3DApp:
                         if not isinstance(result, tuple):
                             result = (result,)
 
-                        gui.Application.instance.post_to_main_thread(self._window, lambda: self._refresh_scene(*result))
+                        gui.Application.instance.post_to_main_thread(self._window, lambda result=result: self._refresh_scene(*result))
                     except StopIteration as e:
                         self._current_progress = 0.5
                         self._current_status = "Waiting..."
@@ -769,7 +781,7 @@ class Open3DApp:
                         if not isinstance(result, tuple):
                             result = (result,)
 
-                        gui.Application.instance.post_to_main_thread(self._window, lambda: self._refresh_scene(*result))
+                        gui.Application.instance.post_to_main_thread(self._window, lambda result=result: self._refresh_scene(*result))
                     except StopIteration as e:
                         self._current_progress = 0.75
                         self._current_status = "Waiting..."

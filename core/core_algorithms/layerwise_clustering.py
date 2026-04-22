@@ -21,7 +21,7 @@ from typing import Dict, Tuple, List, Optional, Callable, Any, Set, Union, Deque
 import numpy as np
 from scipy.spatial import KDTree
 import open3d as o3d
-from utils.get_distinct_colors import get_distinct_colors
+from utils.distinctipy_extra import get_distinct_colors
 from utils.networkx_extra import construct_rough_geodetic_graph_3d, MaxDepth
 from collections import deque, defaultdict
 from utils.clustering import Clustering

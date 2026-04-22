@@ -1,6 +1,61 @@
 {
     "releases": [
         {
+            "version": "2.2.0",
+            "codename": "Ginkgo",
+            "released": "2026/04/22",
+            "changelog": [
+                {
+                    "title": "A more rigorous reconstruction process is enabled, and the calculation method for determining the branch level is adjusted.",
+                    "released": "2026/04/22",
+                    "label": "Changed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Fixed the problem that some steps of the SmartQSM reconstruction process did not display content or were not updated in time.",
+                    "released": "2026/04/22",
+                    "label": "Fixed",
+                    "module": "entrypoints.smartqsm",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Random color acquisition is now managed by the renamed distinction_extra module.",
+                    "released": "2026/04/22",
+                    "label": "Changed",
+                    "module": "utils.distinctipy_extra",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Bug fixes.",
+                    "released": "2026/04/22",
+                    "label": "Fixed",
+                    "module": "",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.1.5",
             "codename": "Ginkgo",
             "released": "2026/04/10",

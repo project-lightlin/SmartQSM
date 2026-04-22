@@ -19,7 +19,7 @@
 from .data_type import Branch
 from .pipeline import Pipeline
 from utils.arterial_snake import generate_arterial_snake
-from utils.get_distinct_colors import get_distinct_colors
+from utils.distinctipy_extra import get_distinct_colors
 from typing import Dict, Generator, Any, List, Tuple, Optional
 import open3d as o3d
 import numpy as np

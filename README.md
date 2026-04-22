@@ -1,6 +1,6 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
-Latest version **2.1.5** released on 2026/04/10. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
 
 ----------- 
 
@@ -9,6 +9,8 @@ Latest version **2.1.5** released on 2026/04/10. [Click here to view changelog](
 > **Note:**
 >
 > This project is under long-term maintenance.
+>
+> **SmartQSM 3 Poplar** plan to be released in autumn 2026.
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author (see below) and we will review it as soon as possible!
 >
@@ -26,7 +28,7 @@ This method integrates multiple (reimplemented and improved) tree skeleton extra
 > - :thumbsup: `layerwise-clustering` proposed by [Xu et al. (2007)](https://doi.org/10.1145/1289603.1289610) and inspired by [Yang et al. (2024)](https://doi.org/10.1002/rse2.399) [:octocat:](https://github.com/wanxinyang/treegraph)
 >
 > **From Ver 2.0:**
-> - :thumbsup: `flexible-layerwise-clustering` inspired by [Wang et al. (2025)](https://doi.org/10.48550/arXiv.2506.15577)
+> - `flexible-layerwise-clustering` inspired by [Wang et al. (2025)](https://doi.org/10.48550/arXiv.2506.15577)
 > - `space-colonization` proposed by [Runions et al. (2007)](https://doi.org/10.2312/nph/nph07/063-070)
 >
 > **More to come...**
