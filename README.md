@@ -10,7 +10,7 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 >
 > This project is under long-term maintenance.
 >
-> **SmartQSM 3 Poplar** plan to be released in autumn 2026.
+> **SmartQSM 3 Poplar** is planned to be released in autumn 2026.
 >
 > We would greatly appreciate it if you could contribute code fixes or new features, and mark your contribution among the contributors:) You can open an issue or mail to the author (see below) and we will review it as soon as possible!
 >
