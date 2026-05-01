@@ -18,6 +18,7 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 >
 
 > :cherry_blossom: **SmartQSM Ecology**
+> 
 > Third-party: [rTwig](https://github.com/aidanmorales/rTwig/)
 
 ## :smiley: First Impression
