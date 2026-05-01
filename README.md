@@ -17,7 +17,7 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 > For technical reasons, early versions (<=2.1.4) underwent many changes. We apologize for any inconvenience  any inconvenience this may have caused.
 >
 
-> :cherry_blossom: **SmartQSM Ecology**
+> :evergreen_tree: **SmartQSM Ecology**
 > 
 > Third-party: [rTwig](https://github.com/aidanmorales/rTwig/)
 
