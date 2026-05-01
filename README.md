@@ -6,7 +6,7 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 
 **SmartQSM** is a quantitative structure model for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
 
-> **Note:**
+> :envelope: **Note**
 >
 > This project is under long-term maintenance.
 >
@@ -16,6 +16,10 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 >
 > For technical reasons, early versions (<=2.1.4) underwent many changes. We apologize for any inconvenience  any inconvenience this may have caused.
 >
+
+> :cherry_blossom: **SmartQSM Ecology**
+> Third-party: [rTwig](https://github.com/aidanmorales/rTwig/)
+
 ## :smiley: First Impression
 
 | Real-time processing and displaying | Interactive architectural analysis |
