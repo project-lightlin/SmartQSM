@@ -21,7 +21,7 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 > 
 > Third-party: [rTwig](https://github.com/aidanmorales/rTwig/)
 >
-> *We would like to thank all the developers who help build the ecosystem! We also recommend reaching out to the authors by email to share your ecosystem-related project!*
+> *We would like to thank all the developers who help build the ecosystem! We also recommend reaching out to the author by email to share your ecosystem-related project!*
 
 ## :smiley: First Impression
 
