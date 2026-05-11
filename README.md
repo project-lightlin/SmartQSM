@@ -17,9 +17,11 @@ Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](
 > For technical reasons, early versions (<=2.1.4) underwent many changes. We apologize for any inconvenience this may have caused.
 >
 
-> :evergreen_tree: **SmartQSM Ecology**
+> :evergreen_tree: **SmartQSM Ecosystem**
 > 
 > Third-party: [rTwig](https://github.com/aidanmorales/rTwig/)
+>
+> *We would like to thank all the developers who help build the ecosystem! We also recommend reaching out to the authors by email to share your ecosystem-related project!*
 
 ## :smiley: First Impression
 
