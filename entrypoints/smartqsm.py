@@ -794,13 +794,12 @@ class Open3DApp:
                 gui.Application.instance.post_to_main_thread(self._window, lambda: self._refresh_scene())
 
                 parameterize_and_export(
-                    branch_id_to_branch,
-                    points,
-                    path_without_extension,
-                    global_shift,
-                    projection,
+                    branch_id_to_branch=branch_id_to_branch,
+                    points=points,
+                    output_path_prefix=path_without_extension,
+                    global_shift=global_shift,
+                    projection=projection,
                     parameter_extraction_kwargs=config.get("parameter_extraction", {}),
-                    num_sectional_vertices=config["modeling"]["num_sectional_vertices"]
                 )
 
                 self._current_progress = 1.
@@ -1001,13 +1000,12 @@ def process_in_terminal(
             print("Parameterizing and exporting...")
 
             parameterize_and_export(
-                branch_id_to_branch,
-                points,
-                path_without_extension,
-                global_shift,
-                projection,
+                branch_id_to_branch=branch_id_to_branch,
+                points=points,
+                output_path_prefix=path_without_extension,
+                global_shift=global_shift,
+                projection=projection,
                 parameter_extraction_kwargs=config.get("parameter_extraction", {}),
-                num_sectional_vertices = config["modeling"]["num_sectional_vertices"]
             )
 
             print("Done.")

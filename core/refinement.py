@@ -372,7 +372,7 @@ class Refinement(Pipeline):
         mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh()
         for point_idx, point in enumerate(self._skeletal_points):
             radius: float = self._reference_radii[point_idx]
-            sphere_mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=radius, resolution=6)
+            sphere_mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=radius, resolution=8)
             sphere_mesh.translate(point)
             sphere_mesh.compute_vertex_normals()
             mesh += sphere_mesh
@@ -804,7 +804,7 @@ class Refinement(Pipeline):
                 radius: float = self._radii[node]
                 sphere_mesh: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(
                     radius=radius, 
-                    resolution=6
+                    resolution=8
                 )
                 sphere_mesh.translate(self._skeletal_points[node])
                 sphere_mesh.compute_vertex_normals()
@@ -955,7 +955,9 @@ class Refinement(Pipeline):
                     start_point=start_point,
                     end_point=end_point,
                     radius=radius,
-                    resolution=12
+                    topless=True,
+                    bottomless=True,
+                    resolution=10
                 )
                 
         return f"Converted data format.", mesh

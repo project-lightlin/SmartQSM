@@ -57,11 +57,11 @@ refinement:
   making_twigs_thinner: True
   node_weight_function: "lambda wpl, wpl_pred, r, r_pred: wpl / wpl_pred + r / r_pred"
 modeling:
-  num_sectional_vertices: 20
+  num_sectional_vertices: 10
   using_furcation_optimization: True
   min_radius: !!float 1.0e-3
   resolution: 0.01
   range_multiplier: 2.75
-  num_sectional_vertices_for_optimization: 12
+  num_sectional_vertices_for_optimization: 8
   rdp_epsilon: 0.01
   num_hermite_nodes: 8

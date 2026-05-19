@@ -98,36 +98,37 @@ def calculate_distances_from_points_to_segments_3d(
     segment_ends: np.ndarray,
     eps: float = 1e-12
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    points = np.asarray(points, dtype=float).reshape(-1, 3)          # (M,3)
-    M = np.asarray(segment_starts, dtype=float).reshape(-1, 3)       # (N,3)
-    Np = np.asarray(segment_ends, dtype=float).reshape(-1, 3)        # (N,3)
 
-    K = points[:, None, :]   # (M,1,3)
-    M_exp = M[None, :, :]    # (1,N,3)
-    Np_exp = Np[None, :, :]  # (1,N,3)
+    points = np.asarray(points, dtype=float).reshape(-1, 3)          # (M, 3)
+    A = np.asarray(segment_starts, dtype=float).reshape(-1, 3)       # (N, 3)
+    B = np.asarray(segment_ends, dtype=float).reshape(-1, 3)         # (N, 3)
 
-    v = Np_exp - M_exp       # (1,N,3)
-    w = K - M_exp            # (M,N,3)
+    P = points[:, None, :]   # (M, 1, 3)
+    A_exp = A[None, :, :]    # (1, N, 3)
+    B_exp = B[None, :, :]    # (1, N, 3)
 
-    vv = np.einsum('ij,ij->i', M, Np - M) 
+    v = B_exp - A_exp        # (1, N, 3), segment direction
+    w = P - A_exp            # (M, N, 3)
 
-    vw = np.einsum('ijk,ijk->ij', w, v)    # (M,N,3)->(M,N)
+    vv = np.einsum('ij,ij->i', B - A, B - A)       # (N,)
+    vw = np.einsum('ijk,ijk->ij', w, v)            # (M, N)
 
-    mask_deg = vv < eps                    # (N,)
+    mask_deg = vv < eps
 
-    t = np.zeros_like(vw)                  # (M,N)
     vv_safe = vv.copy()
-    vv_safe[mask_deg] = 1.0                # 避免除零
-    t = vw / vv_safe[None, :]             # (M,N)
-    t = np.clip(t, 0.0, 1.0)
+    vv_safe[mask_deg] = 1.0
 
-    P = M_exp + t[..., None] * v          # (M,N,3)
+    t_raw = vw / vv_safe[None, :]                  # projection parameter
+    t = np.clip(t_raw, 0.0, 1.0)                   # clamp to segment
+
+    closest = A_exp + t[..., None] * v             # closest point on segment
 
     if np.any(mask_deg):
-        P[:, mask_deg, :] = M_exp[:, mask_deg, :]
+        closest[:, mask_deg, :] = A_exp[:, mask_deg, :]
 
-    d = np.linalg.norm(P - K, axis=2)     # (M,N)
-    return d, P, t
+    d = np.linalg.norm(closest - P, axis=2)         # (M, N)
+
+    return d, closest, t
 
 def calculate_heading_angle(heading_direction: np.ndarray, reference_direction: np.ndarray = np.array([0., 1.]), clockwise=True) -> float: # The convention for navigation is clockwise
     assert heading_direction.shape == reference_direction.shape \

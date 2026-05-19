@@ -1,11 +1,15 @@
 import numpy as np
 import open3d as o3d
 from scipy.spatial import KDTree
+from typing import List
 
 def create_cylinder(
         start_point: np.ndarray,
         end_point: np.ndarray,
         radius: float,
+        *,
+        topless: bool = False,
+        bottomless: bool = False,
         resolution: int = 20
 ) -> o3d.geometry.TriangleMesh:
     z_axis: np.ndarray = np.array([0, 0, 1])
@@ -15,6 +19,16 @@ def create_cylinder(
                     height=height,
                     resolution=resolution
     )
+    
+    useless_indices: List[int] = []
+    if topless:
+        useless_indices.extend(list(range(0, 2 * resolution, 2)))
+    if bottomless:
+        useless_indices.extend(list(range(1, 2 * resolution, 2)))
+    cylinder.triangles = o3d.utility.Vector3iVector(
+        np.delete(np.asarray(cylinder.triangles), useless_indices, axis=0)
+    )
+    
     direction: np.ndarray = (end_point - start_point) / height
     axis = np.cross(z_axis, direction)
     norm_axis = np.linalg.norm(axis)
@@ -43,3 +57,4 @@ def calculate_min_spacing_between(point_set_1: np.ndarray, point_set_2: np.ndarr
         kdtree = KDTree(point_set_1)
         min_spacing = np.min(kdtree.query(point_set_2, k=1)[0]) 
     return min_spacing
+

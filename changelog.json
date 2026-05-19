@@ -1,6 +1,61 @@
 {
     "releases": [
         {
+            "version": "2.3.0",
+            "codename": "Ginkgo",
+            "released": "2026/05/19",
+            "changelog": [
+                {
+                    "title": "More accurate volume and surface area metrics.",
+                    "released": "2026/05/19",
+                    "label": "Fixed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "The accuracy of the model is appropriately sacrificed to significantly reduce file size and improve processing speed. The number of sides of a regular polygon in the cross-section is recorded in QSM.",
+                    "released": "2026/05/19",
+                    "label": "Changed",
+                    "module": "core.modeling",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Use full name: (Active) crown convex",
+                    "released": "2026/05/19",
+                    "label": "Changed",
+                    "module": "core.parameterize_and_export",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                },
+                {
+                    "title": "Bug fixes.",
+                    "released": "2026/05/19",
+                    "label": "Fixed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.2.0",
             "codename": "Ginkgo",
             "released": "2026/04/22",

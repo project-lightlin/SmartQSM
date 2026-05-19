@@ -27,6 +27,7 @@ from utils.hash import get_md5_hash
 from .parameter_extraction import ParameterExtraction
 
 def parameterize_and_export(
+        *,
         branch_id_to_branch: Dict[int, Branch],
         points: np.ndarray,
         output_path_prefix: str,
@@ -59,8 +60,8 @@ def parameterize_and_export(
 
     os.makedirs(os.path.dirname(output_path_prefix), exist_ok=True)
     branch_mesh_path: str = f"{output_path_prefix}_branches.ply"
-    crown_mesh_path: str = f"{output_path_prefix}_crown.ply"
-    active_crown_mesh_path: str = f"{output_path_prefix}_active_crown.ply"
+    crown_convex_mesh_path: str = f"{output_path_prefix}_crown_convex.ply"
+    active_crown_convex_mesh_path: str = f"{output_path_prefix}_active_crown_convex.ply"
     skeleton_path: str = f"{output_path_prefix}_skeleton.dxf"
     qsm_path: str = f"{output_path_prefix}_qsm.mat"
 
@@ -170,21 +171,34 @@ def parameterize_and_export(
     for branch_id, triangle_idx_range in branch_id_to_triangle_idx_range.items():
         branch_data["start"][branch_id - 1] = triangle_idx_range[0]
         branch_data["end"][branch_id - 1] = triangle_idx_range[1]
+        # keep type
+        if branch_id == 1:
+            tree_data["start"] = branch_data["start"][branch_id - 1] 
+            tree_data["end"] = branch_data["end"][branch_id - 1]
     branch_data["id"][0] = 1 # Trunk
+    
 
+    branch_data["resolution"] = np.zeros(shape=max_branch_id, dtype=np.uint8)
+    for branch_id, branch in branch_id_to_branch.items():
+        branch_data["resolution"][branch_id - 1] = branch_id_to_branch[branch_id].num_sectional_vertices
+        # keep type
+        if branch_id == 1:
+            tree_data["resolution"] = branch_data["resolution"][branch_id - 1]
+
+    
     if parameter_extraction.crown_convex_hull is not None:
         crown_convex_hull: o3d.geometry.TriangleMesh = parameter_extraction.crown_convex_hull
         crown_convex_hull.translate(-global_shift)
         crown_convex_hull.compute_triangle_normals()
         crown_convex_hull.compute_vertex_normals()
-        o3d.io.write_triangle_mesh(crown_mesh_path, crown_convex_hull, write_vertex_normals=True)
+        o3d.io.write_triangle_mesh(crown_convex_mesh_path, crown_convex_hull, write_vertex_normals=True)
 
     if parameter_extraction.active_crown_convex_hull is not None:
         active_crown_convex_hull: o3d.geometry.TriangleMesh = parameter_extraction.active_crown_convex_hull
         active_crown_convex_hull.translate(-global_shift)
         active_crown_convex_hull.compute_triangle_normals()
         active_crown_convex_hull.compute_vertex_normals()
-        o3d.io.write_triangle_mesh(active_crown_mesh_path, active_crown_convex_hull, write_vertex_normals=True)
+        o3d.io.write_triangle_mesh(active_crown_convex_mesh_path, active_crown_convex_hull, write_vertex_normals=True)
     
     # Change (N,) to (N, 1)
     for key in qsm_cylinder_dict.keys():
@@ -217,7 +231,7 @@ def parameterize_and_export(
                     "target_ply": os.path.basename(branch_mesh_path),
                     "hash": branch_mesh_hash, # Prevent any tampering
                     "projection": projection,
-                    "creator": creator
+                    "creator": creator,
                 },
                 **additional_info_kwargs
             }

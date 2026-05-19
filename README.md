@@ -1,6 +1,6 @@
 # <img src="https://github.com/project-lightlin/misc/blob/main/img/smartqsm-logo.png?raw=true" width="192" height="24" alt="logo"> 2 Ginkgo *<span style="font-weight:normal;">assists in Comprehensive Survey of Ancient and Famous Trees</span>*
 
-Latest version **2.2.0** released on 2026/04/22. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
+Latest version **2.3.0** released on 2026/05/19. [Click here to view changelog](https://github.com/project-lightlin/SmartQSM/blob/main/changelog.json). 
 
 ----------- 
 
@@ -140,9 +140,9 @@ The default configuration file represented by `CONFIG` is located in the **confi
 > *Output*
 > 
 > Each processed individual tree point cloud will generate five output files in the same directory, including:
-> - **\*_active_crown.ply**: Triangle mesh of active crown convex hull
+> - **\*_active_crown_convex.ply**: Triangle mesh of active crown convex hull
 > - **\*_branches.ply**: Triangle mesh of branching structure colored by order
-> - **\*_crown.ply**: Triangle mesh of crown convex hull
+> - **\*_crown_convex.ply**: Triangle mesh of crown convex hull
 > - **\*_qsm.mat**: This file can be the input of some tools developed for [TreeQSM](https://github.com/InverseTampere/TreeQSM) such as [LeafGen](https://github.com/InverseTampere/leafgen). However, when using it, you need to transform the coordinates in `QSM.cylinder.start`. The recommended solution is to subtract `[QSM.treedata.X_m, QSM.treedata.Y_m, QSM.treedata.altitude_m]` from each coordinate. Otherwise, especially when a projected coordinate system is involved, the model cannot be displayed correctly.
 > - **\*_skeleton.dxf**: Line set of tree skeleton
 >

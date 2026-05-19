@@ -58,7 +58,7 @@ class Modeling(Pipeline):
         )
         return
     
-    def set_params(self, *, num_sectional_vertices: int,  using_furcation_optimization: bool = True, min_radius: float = 0.001, resolution: float = 0.01, range_multiplier: float = 2.0, num_sectional_vertices_for_optimization: int = 12, rdp_epsilon: float = 0.01, num_hermite_nodes: int = 8) -> None:
+    def set_params(self, *, num_sectional_vertices: int = 10,  using_furcation_optimization: bool = True, min_radius: float = 0.001, resolution: float = 0.01, range_multiplier: float = 2.0, num_sectional_vertices_for_optimization: int = 8, rdp_epsilon: float = 0.01, num_hermite_nodes: int = 8) -> None:
         if num_sectional_vertices < 3 or num_sectional_vertices_for_optimization < 3:
             raise ValueError("num_sectional_vertices must be >= 3")
         self._num_sectional_vertices = num_sectional_vertices

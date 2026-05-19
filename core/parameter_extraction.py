@@ -81,8 +81,22 @@ class ParameterExtraction:
     _disc_thickness: float
     _n_neighbors_for_lof: int
     _min_pts_for_lof: int
+    _volume_correction_fn: Callable[[int], float]
+    _lateral_area_correction_fn: Callable[[int], float]
 
-    def __init__(self, branch_id_to_branch: Dict[int, Branch], points: np.ndarray, global_shift: np.ndarray, measurement_radius: float = 0.05, sampling_size: float = 0.005, degree_resolution: float = 1.0, crown_radius_upper_bound: float = 1e4, disc_thickness: float = 0.05, n_neighbors_for_lof: int = 2, min_pts_for_lof: int = 20) -> None:
+    def __init__(
+            self, 
+            branch_id_to_branch: Dict[int, Branch], 
+            points: np.ndarray, 
+            global_shift: np.ndarray, 
+            measurement_radius: float = 0.05, 
+            sampling_size: float = 0.005, 
+            degree_resolution: float = 1.0, 
+            crown_radius_upper_bound: float = 1e4, 
+            disc_thickness: float = 0.05, 
+            n_neighbors_for_lof: int = 2, 
+            min_pts_for_lof: int = 20
+    ) -> None:
         self._branch_id_to_branch = branch_id_to_branch
         self._points = points
         self._global_shift = global_shift
@@ -94,7 +108,10 @@ class ParameterExtraction:
         self._disc_thickness = disc_thickness
         self._n_neighbors_for_lof = n_neighbors_for_lof
         self._min_pts_for_lof = min_pts_for_lof
-        
+
+        self._volume_correction_fn = lambda n: 2 * np.pi / (n * np.sin(2 * np.pi / n)) # V_cylinder / V_nside_prism
+        self._lateral_area_correction_fn = lambda n: np.pi / (n * np.sin(np.pi / n)) # LA_cylinder / LA_nside_prism
+
         self._tree_parameter_to_dtype = {
             "X_m": "float64",
             "Y_m": "float64",
@@ -340,23 +357,23 @@ class ParameterExtraction:
         tree_dataframe.at[0, "stem_length_m"] = stem_length
         
         # Trunk / branch / stem area & volume
-        trunk_area: float = trunk.backup_arterial_snake.get_surface_area()
+        trunk_area: float = trunk.backup_arterial_snake.get_surface_area()  * self._lateral_area_correction_fn(trunk.num_sectional_vertices)
         trunk_volume: float = 0.0
         try:
-            trunk_volume = calculate_rough_volume(trunk.backup_arterial_snake, trunk.num_sectional_vertices) 
+            trunk_volume = calculate_rough_volume(trunk.backup_arterial_snake, trunk.num_sectional_vertices) * self._volume_correction_fn(trunk.num_sectional_vertices)
         except Exception:
             pass
         tree_dataframe.at[0, "trunk_area_m2"] = trunk_area
-        tree_dataframe.at[0, "trunk_volume_L"] = trunk_volume * 1000.
+        tree_dataframe.at[0, "trunk_volume_L"] = trunk_volume * 1000. 
         stem_area: float = trunk_area
         stem_volume: float = trunk_volume
         for branch_id, branch in self._branch_id_to_branch.items():
             if branch_id == 1: # Trunk
                 continue
-            branch_area: float = branch.backup_arterial_snake.get_surface_area()
+            branch_area: float = branch.backup_arterial_snake.get_surface_area()  * self._lateral_area_correction_fn(branch.num_sectional_vertices)
             branch_volume: float = 0.0
             try:
-                branch_volume = calculate_rough_volume(branch.backup_arterial_snake, branch.num_sectional_vertices) 
+                branch_volume = calculate_rough_volume(branch.backup_arterial_snake, branch.num_sectional_vertices) * self._volume_correction_fn(branch.num_sectional_vertices)
             except Exception:
                 pass
             stem_area += branch_area
@@ -395,8 +412,11 @@ class ParameterExtraction:
                 bole_length += np.linalg.norm(trunk.medial_points[i + 1] - trunk.medial_points[i])
             bole_mesh: o3d.geometry.TriangleMesh = generate_arterial_snake(trunk.medial_points[:bole_top_id + 1], trunk.radii[:bole_top_id + 1], trunk.num_sectional_vertices)
             active_crown_vertex_start_in_trunk_mesh = len(bole_mesh.vertices)
-            bole_area = bole_mesh.get_surface_area()
-            bole_volume = calculate_rough_volume(bole_mesh, trunk.num_sectional_vertices)
+            bole_area = bole_mesh.get_surface_area() * self._lateral_area_correction_fn(trunk.num_sectional_vertices)
+            try:
+                bole_volume = calculate_rough_volume(bole_mesh, trunk.num_sectional_vertices) * self._volume_correction_fn(trunk.num_sectional_vertices)
+            except Exception:
+                pass
         tree_dataframe.at[0, "bole_length_m"] = bole_length
         tree_dataframe.at[0, "bole_area_m2"] = bole_area
         tree_dataframe.at[0, "bole_volume_L"] = bole_volume * 1000.
