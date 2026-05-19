@@ -1,6 +1,25 @@
 {
     "releases": [
         {
+            "version": "2.3.1",
+            "codename": "Ginkgo",
+            "released": "2026/05/19",
+            "changelog": [
+                {
+                    "title": "Girth is no longer calculated using convex hull projection, but using cylindrical fitting instead.",
+                    "released": "2026/05/19",
+                    "label": "Fixed",
+                    "module": "core.refinement",
+                    "language": "en",
+                    "author": "YANG Jie",
+                    "description_group": [
+                    ],
+                    "urgency": "critical",
+                    "url_group": []
+                }
+            ]
+        },
+        {
             "version": "2.3.0",
             "codename": "Ginkgo",
             "released": "2026/05/19",

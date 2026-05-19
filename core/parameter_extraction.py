@@ -28,6 +28,8 @@ from utils.numpy_extra import calculate_heading_angle, calculate_distances_from_
 from shapely.geometry import Point, Polygon
 from shapely.ops import nearest_points
 from sklearn.neighbors import LocalOutlierFactor
+from utils.ransac3d import cylindrical_ransac
+
 
 def _calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
     angle: float = calculate_angle_between_vectors(v1, v2)
@@ -79,8 +81,11 @@ class ParameterExtraction:
     _degree_resolution: float
     _crown_radius_upper_bound: float
     _disc_thickness: float
-    _n_neighbors_for_lof: int
-    _min_pts_for_lof: int
+    _alternative_disc_thickness: float
+    _threshold_for_ransac: float
+    _max_num_iterations_for_ransac: int
+    _sample_size_for_ransac: int
+
     _volume_correction_fn: Callable[[int], float]
     _lateral_area_correction_fn: Callable[[int], float]
 
@@ -93,9 +98,11 @@ class ParameterExtraction:
             sampling_size: float = 0.005, 
             degree_resolution: float = 1.0, 
             crown_radius_upper_bound: float = 1e4, 
-            disc_thickness: float = 0.05, 
-            n_neighbors_for_lof: int = 2, 
-            min_pts_for_lof: int = 20
+            disc_thickness: float = 0.06, 
+            alternative_disc_thickness: float = 0.4,
+            threshold_for_ransac: float = 0.05,
+            max_num_iterations_for_ransac: int = 5000,
+            sample_size_for_ransac: int = 8
     ) -> None:
         self._branch_id_to_branch = branch_id_to_branch
         self._points = points
@@ -106,8 +113,11 @@ class ParameterExtraction:
         self._degree_resolution = degree_resolution
         self._crown_radius_upper_bound = crown_radius_upper_bound
         self._disc_thickness = disc_thickness
-        self._n_neighbors_for_lof = n_neighbors_for_lof
-        self._min_pts_for_lof = min_pts_for_lof
+        self._alternative_disc_thickness = alternative_disc_thickness
+
+        self._threshold_for_ransac = threshold_for_ransac
+        self._max_num_iterations_for_ransac = max_num_iterations_for_ransac
+        self._sample_size_for_ransac = sample_size_for_ransac
 
         self._volume_correction_fn = lambda n: 2 * np.pi / (n * np.sin(2 * np.pi / n)) # V_cylinder / V_nside_prism
         self._lateral_area_correction_fn = lambda n: np.pi / (n * np.sin(np.pi / n)) # LA_cylinder / LA_nside_prism
@@ -243,21 +253,35 @@ class ParameterExtraction:
         tree_dataframe.at[0, "height_m"] = tree_height
 
         # Girth
-        points_at_breast_height: np.ndarray = self._points[(self._points[:, 2] - z_min >= 1.3 - self._disc_thickness / 2.) & (self._points[:, 2] - z_min <= 1.3 + self._disc_thickness / 2.)]
         girth: float = 0.0
         try:
-            projected_points: np.ndarray = points_at_breast_height[:, :2]
+            points_at_breast_height: np.ndarray = self._points[
+                (self._points[:, 2] - z_min >= 1.3 - self._disc_thickness / 2.) \
+                & (self._points[:, 2] - z_min <= 1.3 + self._disc_thickness / 2.)
+            ]
+            _, _, radius, _ = cylindrical_ransac(
+                points_at_breast_height, 
+                self._threshold_for_ransac, 
+                self._max_num_iterations_for_ransac,
+                self._sample_size_for_ransac
+            )
+            girth = 2.0 * radius * np.pi
+        except:
             try:
-                projected_points = np.unique(projected_points, axis=0)
-                if len(projected_points) >= self._min_pts_for_lof:
-                    projected_points = projected_points[
-                        LocalOutlierFactor(n_neighbors=self._n_neighbors_for_lof).fit_predict(projected_points) == 1
-                    ]
-            except Exception:
+                points_at_breast_height: np.ndarray = self._points[
+                    (self._points[:, 2] - z_min >= 1.3 - self._alternative_disc_thickness / 2.) \
+                    & (self._points[:, 2] - z_min <= 1.3 + self._alternative_disc_thickness / 2.)
+                ]
+                _, _, radius, _ = cylindrical_ransac(
+                    points_at_breast_height, 
+                    self._threshold_for_ransac, 
+                    self._max_num_iterations_for_ransac,
+                    self._sample_size_for_ransac
+                )
+                girth = 2.0 * radius * np.pi
+            except:
                 pass
-            girth = ConvexHull(projected_points).area
-        except Exception:
-            pass
+
         tree_dataframe.at[0, "girth_m"] = girth
 
         # Trunk diameters & length
