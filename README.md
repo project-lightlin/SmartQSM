@@ -4,7 +4,7 @@ Latest version **2.3.1** released on 2026/05/19. [Click here to view changelog](
 
 ----------- 
 
-**SmartQSM** is a quantitative structure model for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
+**SmartQSM** is a quantitative structure modeling (QSM) tool for individual tree 3D reconstruction and parameter extraction based on point cloud data. It is a part of [Project LiGHTLIN](https://project-lightlin.github.io/).
 
 > :envelope: **Note**
 >
@@ -143,7 +143,7 @@ The default configuration file represented by `CONFIG` is located in the **confi
 > - **\*_active_crown_convex.ply**: Triangle mesh of active crown convex hull
 > - **\*_branches.ply**: Triangle mesh of branching structure colored by order
 > - **\*_crown_convex.ply**: Triangle mesh of crown convex hull
-> - **\*_qsm.mat**: This file can be the input of some tools developed for [TreeQSM](https://github.com/InverseTampere/TreeQSM) such as [LeafGen](https://github.com/InverseTampere/leafgen). However, when using it, you need to transform the coordinates in `QSM.cylinder.start`. The recommended solution is to subtract `[QSM.treedata.X_m, QSM.treedata.Y_m, QSM.treedata.altitude_m]` from each coordinate. Otherwise, especially when a projected coordinate system is involved, the model cannot be displayed correctly.
+> - **\*_qsm.mat**: The TreeQSM-like quantitative structure model can be the input of some tools developed for [TreeQSM](https://github.com/InverseTampere/TreeQSM) such as [LeafGen](https://github.com/InverseTampere/leafgen). However, when using it, you need to transform the coordinates in `QSM.cylinder.start`. The recommended solution is to subtract `[QSM.treedata.X_m, QSM.treedata.Y_m, QSM.treedata.altitude_m]` from each coordinate. Otherwise, especially when a projected coordinate system is involved, the model cannot be displayed correctly.
 > - **\*_skeleton.dxf**: Line set of tree skeleton
 >
 > PLY and DXF files can be opened by [CloudCompare](https://www.cloudcompare.org/).
